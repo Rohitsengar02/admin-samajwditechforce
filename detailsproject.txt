@@ -1,0 +1,423 @@
+React Native Admin Panel + Web Responsive Admin Dashboard for the Samajwadi Tech Force project.
+Use React Native + Expo + NativeWind (TailwindCSS for RN) + React Native Web.
+Backend: Node.js + Express + MongoDB.
+Reference Specification: Use the uploaded PDF “S.T.F (3).pdf” as the official functional guide.
+
+⭐ UI & UX Requirements
+
+Build a modern, premium-quality UI using React Native compatible design.
+
+Use gradient backgrounds, soft pastel colors, glassmorphism cards, smooth shadows.
+
+Add dark mode + light mode theme switch.
+
+All pages must be responsive and work on:
+
+Mobile
+
+Tablet
+
+Desktop web (React Native Web)
+
+On desktop screens, show a full sidebar.
+
+On mobile, show a sliding sidebar with a hamburger menu.
+
+Use modern animations for transitions, modals, cards, and page loads.
+
+Use iconography that feels political, professional, youth-friendly, digital-learning-themed.
+
+Typography: clean, rounded, bold headings, comfortable readability.
+
+Layout: consistent spacing system, 20–24 padding, 16–20 margins.
+
+Style inspiration:
+
+Linear gradients (blue → purple → violet)
+
+Dashboard-style cards
+
+Clean analytics visuals
+
+Smooth motion UI
+
+⭐ Project Output Requirements
+
+The AI should generate:
+
+1. Admin App (React Native + Web)
+
+Put all UI screens inside a top-level folder named admin/.
+
+Support navigation for all admin pages.
+
+Each screen must follow responsive-tailwind styles.
+
+2. Backend (Node + Express + MongoDB)
+
+All API endpoints and backend logic inside a top-level folder named backend/.
+
+Use JWT authentication and role-based access control.
+
+Create complete models, controllers, routes, and validation.
+
+⭐ ADMIN PANEL CONTENT (From PDF Structure)
+
+The admin panel must include all features implied in the PDF S.T.F (3).pdf.
+
+Admin Features to Build:
+
+Admin Login
+
+Dashboard
+
+Member Management
+
+Member Verification
+
+Digital ID Management
+
+District & Assembly Management
+
+Tech-Force District Structure
+
+Four-Phase Training System
+
+Training Submission Approval
+
+Daily Digital Tasks Manager
+
+Task Submissions Review
+
+Rewards & Leaderboard Control
+
+Resource Library Management
+
+Poster/Reels Upload Management
+
+Content Templates Management
+
+Discussion / Communication Hub Moderation
+
+Announcements Manager
+
+Push Notifications Broadcast
+
+Election Mode Management
+
+Booth-Level Reporting
+
+Candidate Management
+
+Analytics & Reporting
+
+Fake Account / Spam Reporting Panel
+
+Security & Access Logs
+
+Admin Roles & Permissions
+
+App Text / Content Management
+
+Settings Panel (SMTP, API keys, Maps keys)
+
+⭐ Admin Screens (UI Pages) to Create
+
+Create all UI screens listed below with clean, gradient-themed, animation-rich interfaces:
+
+A. AUTHENTICATION
+
+Admin Login
+
+Forgot Password
+
+Reset Password
+
+OTP Screen
+
+Admin Profile
+
+B. HOME & DASHBOARD
+
+Main Dashboard with charts
+
+Quick Actions row
+
+Activity feed
+
+C. MEMBER MANAGEMENT
+
+Members List (with filters + search)
+
+Member Detail Page
+
+Member Role Assignment
+
+Member Performance Report
+
+Member Verification Queue
+
+D. DIGITAL ID
+
+Digital ID Approval
+
+ID Generator
+
+ID Reissue Panel
+
+E. DISTRICTS & ASSEMBLY
+
+District List
+
+Add/Edit District
+
+Assembly List
+
+Add/Edit Assembly
+
+District-wise Members
+
+District Group Links
+
+F. TRAINING 4 PHASES
+
+Training Dashboard
+
+Phase 1 – Connect
+
+Phase 2 – Create
+
+Phase 3 – Conquer
+
+Phase 4 – Conclusion
+
+Module Creation
+
+Module Content Editor
+
+Module Submission Approval
+
+G. DAILY DIGITAL WORK
+
+Daily Task Builder
+
+Tasks List
+
+Submissions Approval Panel
+
+Reward Assignment System
+
+H. RESOURCE LIBRARY
+
+Posters Upload
+
+Reels Templates
+
+Editing Tutorials
+
+Documents & Speech Templates
+
+Resource Download Logs
+
+I. COMMUNICATION HUB
+
+Announcements Manager
+
+Push Notification Creator
+
+Discussion Moderator
+
+Question Review (Ask Leader)
+
+Suggestion Box Review
+
+J. ELECTION MODE
+
+Election Mode Dashboard
+
+Booth Management
+
+Volunteer Assignment
+
+Candidate List & Profiles
+
+Daily Booth Report Review
+
+K. ANALYTICS & REPORTS
+
+Training analytics
+
+District comparison
+
+Activity stats
+
+Export reports (PDF/CSV)
+
+L. SECURITY
+
+Fake Account Reports
+
+Error Logs
+
+Admin Activity Logs
+
+Suspended Users
+
+M. SETTINGS
+
+App Settings
+
+Theme Management
+
+Language Management
+
+SMTP Settings
+
+API Keys (Maps, Notifications)
+
+Admin Roles & Permissions
+
+⭐ DESIGN SYSTEM REQUIREMENTS
+
+Create all UI components as reusable:
+
+Components:
+
+Sidebar (desktop)
+
+Sliding Sidebar (mobile)
+
+Top Navigation Bar
+
+Search Bar
+
+Data Table
+
+Card Component
+
+Stats Card (analytics)
+
+Button (primary, gradient)
+
+Modal
+
+Input Fields
+
+File Uploader
+
+Filter Drawer
+
+Toast Notifications
+
+Design Rules:
+
+Rounded corners (xl / 2xl)
+
+Smooth shadows (shadow-lg)
+
+Gradient headers
+
+Animated transitions
+
+Light/Dark mode toggle
+
+⭐ RESPONSIVE BEHAVIOR
+Desktop
+
+Sidebar always visible
+
+Multi-column layouts
+
+Data tables in full width
+
+Charts side-by-side
+
+Tablet
+
+Collapsible sidebar
+
+Cards wrap into two columns
+
+Mobile
+
+Sidebar hidden by default
+
+Bottom tab navigation optional
+
+Cards stack vertically
+
+⭐ BACKEND REQUIREMENTS
+
+The backend must include:
+
+Authentication
+
+Admin login → returns JWT
+
+Refresh token system
+
+Role middleware
+
+CRUD APIs
+
+For members, districts, assemblies, modules, tasks, reports, notifications, resources, election mode, etc.
+
+Validation
+
+Use Joi or Validator.
+
+Database
+
+Use MongoDB + Mongoose.
+
+File Upload
+
+Use:
+
+MongoDB GridFS
+or
+
+AWS S3
+
+Reports
+
+Exportable CSV + PDF.
+
+⭐ WHAT THE AI SHOULD GENERATE
+
+Ask the AI to generate:
+
+All Admin UI Screens
+
+All Backend API Endpoints
+
+Folder Structure
+
+All Models + Controllers + Routes
+
+Theme, Layout, Sidebar, Navigation
+
+Animations + Gradients + Responsive UI
+
+Light/Dark Mode
+
+Mock Data for All Screens
+
+Complete Documentation
+
+⭐ Final Special Instruction
+
+All features must match the PDF content “S.T.F (3).pdf” exactly, including:
+Digital Tasks → 4-Phase Training → Election Mode → District-Based Connectivity → Resource Library → Communication Hub → Verification → Digital ID.
+
+🎉 Your Prompt Is Ready
+
+This is a complete, professional-level prompt designed for AI to generate your full admin system.
+
+Whenever you're ready, I can also generate:
+
+✅ Full frontend folder structure
+✅ Full backend folder structure
+✅ Figma UI prompts
+✅ Logo + brand identity prompt
+✅ Database schema prompt
