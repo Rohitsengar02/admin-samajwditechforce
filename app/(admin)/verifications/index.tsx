@@ -31,23 +31,14 @@ export default function VerificationsPage() {
     }, []);
 
     const getApiUrl = () => {
-        let url = process.env.EXPO_PUBLIC_API_URL;
-        if (!url) {
-            if (Platform.OS === 'android') {
-                url = 'http://10.0.2.2:5000/api';
-            } else {
-                url = 'http://localhost:5000/api';
-            }
-        } else if (!url.endsWith('/api')) {
-            url = `${url}/api`;
-        }
-
         if (Platform.OS === 'android') {
-            if (url.includes('localhost')) url = url.replace('localhost', '192.168.1.39');
-            if (url.includes('127.0.0.1')) url = url.replace('127.0.0.1', '192.168.1.39');
-            if (url.includes('10.0.2.2')) url = url.replace('10.0.2.2', '192.168.1.39');
+            return 'http://192.168.1.46:5001/api';
         }
-        return url;
+        if (Platform.OS === 'ios') {
+            return 'http://localhost:5001/api';
+        }
+        const baseUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5001';
+        return baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
     };
 
     const fetchVerifications = async () => {

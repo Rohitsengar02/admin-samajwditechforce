@@ -16,10 +16,13 @@ const AnimatedBubble = ({ size, top, left }: { size: number; top: number; left: 
 
 const getApiUrl = () => {
     if (Platform.OS === 'android') {
-        return 'http://192.168.1.39:5000/api/resources';
+        return 'http://192.168.1.46:5001/api/resources';
+    }
+    if (Platform.OS === 'ios') {
+        return 'http://localhost:5001/api/resources';
     }
     if (process.env.EXPO_PUBLIC_API_URL) return `${process.env.EXPO_PUBLIC_API_URL}/api/resources`;
-    return 'http://localhost:5000/api/resources';
+    return 'http://localhost:5001/api/resources';
 };
 
 const API_URL = getApiUrl();

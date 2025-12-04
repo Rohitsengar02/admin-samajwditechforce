@@ -10,7 +10,9 @@ import {
     Alert,
     ActivityIndicator,
     Modal,
-    Platform
+    Platform,
+    useWindowDimensions,
+    FlatList
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -21,7 +23,7 @@ const SP_RED = '#E30512';
 
 const getApiUrl = () => {
     if (Platform.OS === 'android') {
-        return 'http://192.168.1.39:5000/api';
+        return 'http://192.168.1.46:5001/api';
     }
     let url = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000';
     if (!url.endsWith('/api')) {
@@ -54,6 +56,17 @@ export default function PostersPage() {
     const [title, setTitle] = useState('');
     const [selectedImage, setSelectedImage] = useState<ImagePicker.ImagePickerAsset | null>(null);
     const [stats, setStats] = useState<Stats>({ totalPosters: 0, totalDownloads: 0 });
+
+    const { width } = useWindowDimensions();
+    const isDesktop = Platform.OS === 'web' && width >= 1024;
+    const isTablet = Platform.OS === 'web' && width >= 768 && width < 1024;
+
+    // Calculate number of columns based on screen size
+    const getNumColumns = () => {
+        if (isDesktop) return 4;
+        if (isTablet) return 3;
+        return 2;
+    };
 
     useEffect(() => {
         fetchPosters();
@@ -119,26 +132,18 @@ export default function PostersPage() {
 
             const token = await AsyncStorage.getItem('adminToken');
 
-            // Debug logging
-            console.log('Token retrieved:', token ? 'Token exists' : 'No token found');
-
             if (!token) {
-                Alert.alert('Authentication Error', 'Please log in to upload posters. No auth token found.');
+                Alert.alert('Authentication Error', 'Please log in to upload posters.');
                 setUploading(false);
                 return;
             }
 
-            // Convert image to base64
             const response = await fetch(selectedImage.uri);
             const blob = await response.blob();
             const reader = new FileReader();
 
             reader.onloadend = async () => {
                 const base64data = reader.result as string;
-
-                console.log('Uploading to:', `${API_URL}/posters/upload`);
-                console.log('Title:', title);
-                console.log('Image size:', base64data.length, 'characters');
 
                 const uploadResponse = await fetch(`${API_URL}/posters/upload`, {
                     method: 'POST',
@@ -154,9 +159,6 @@ export default function PostersPage() {
 
                 const data = await uploadResponse.json();
 
-                console.log('Upload response status:', uploadResponse.status);
-                console.log('Upload response data:', data);
-
                 if (uploadResponse.ok) {
                     Alert.alert('Success', 'Poster uploaded successfully!');
                     setShowUploadModal(false);
@@ -165,7 +167,7 @@ export default function PostersPage() {
                     fetchPosters();
                     fetchStats();
                 } else {
-                    Alert.alert('Error', data.message || `Upload failed: ${uploadResponse.status}`);
+                    Alert.alert('Error', data.message || `Upload failed`);
                 }
                 setUploading(false);
             };
@@ -173,7 +175,7 @@ export default function PostersPage() {
             reader.readAsDataURL(blob);
         } catch (error) {
             console.error('Upload error:', error);
-            Alert.alert('Error', `Failed to upload poster: ${error}`);
+            Alert.alert('Error', `Failed to upload poster`);
             setUploading(false);
         }
     };
@@ -214,6 +216,33 @@ export default function PostersPage() {
         );
     };
 
+    const renderPosterCard = ({ item }: { item: Poster }) => (
+        <View key={item._id} style={[
+            styles.posterCard,
+            { width: isDesktop ? '23%' : isTablet ? '31%' : '47%' }
+        ]}>
+            <Image source={{ uri: item.imageUrl }} style={styles.posterImage} />
+            <LinearGradient
+                colors={['transparent', 'rgba(0,0,0,0.8)']}
+                style={styles.posterOverlay}
+            >
+                <Text style={styles.posterTitle} numberOfLines={2}>{item.title}</Text>
+                <View style={styles.posterActions}>
+                    <View style={styles.downloadInfo}>
+                        <MaterialCommunityIcons name="download" size={16} color="#fff" />
+                        <Text style={styles.downloadCount}>{item.downloadCount}</Text>
+                    </View>
+                    <TouchableOpacity
+                        style={styles.deleteButton}
+                        onPress={() => deletePoster(item._id)}
+                    >
+                        <MaterialCommunityIcons name="delete-outline" size={20} color="#fff" />
+                    </TouchableOpacity>
+                </View>
+            </LinearGradient>
+        </View>
+    );
+
     if (loading) {
         return (
             <View style={styles.loadingContainer}>
@@ -225,67 +254,85 @@ export default function PostersPage() {
 
     return (
         <View style={styles.container}>
-            <LinearGradient colors={['#ffffff', '#f8f9fa']} style={styles.background} />
+            <LinearGradient
+                colors={['#FEF2F2', '#FFFFFF']}
+                style={styles.background}
+            />
 
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: Platform.OS === 'web' ? 40 : 120 }}
+            >
                 {/* Header */}
-                <View style={styles.header}>
-                    <View>
-                        <Text style={styles.title}>Poster Management</Text>
-                        <Text style={styles.subtitle}>Upload and manage party posters</Text>
+                <View style={[
+                    styles.header,
+                    isDesktop && styles.headerDesktop,
+                    !isDesktop && !isTablet && styles.headerMobile
+                ]}>
+                    <View style={{ flex: 1 }}>
+                        <Text style={styles.title}>🎨 Poster Management</Text>
+                        <Text style={styles.subtitle}>Create, upload and manage campaign posters</Text>
                     </View>
                     <TouchableOpacity
                         style={styles.uploadButton}
                         onPress={() => setShowUploadModal(true)}
                     >
-                        <LinearGradient colors={[SP_RED, '#b91c1c']} style={styles.uploadButtonGradient}>
-                            <MaterialCommunityIcons name="plus" size={24} color="#fff" />
-                            <Text style={styles.uploadButtonText}>Upload Poster</Text>
+                        <LinearGradient
+                            colors={[SP_RED, '#B91C1C']}
+                            style={styles.uploadButtonGradient}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                        >
+                            <MaterialCommunityIcons name="plus-circle" size={20} color="#fff" />
+                            <Text style={styles.uploadButtonText}>
+                                {isDesktop || isTablet ? 'Upload New' : 'Upload'}
+                            </Text>
                         </LinearGradient>
                     </TouchableOpacity>
                 </View>
 
                 {/* Stats Cards */}
-                <View style={styles.statsContainer}>
-                    <View style={styles.statCard}>
-                        <MaterialCommunityIcons name="image-multiple" size={32} color={SP_RED} />
+                <View style={[styles.statsContainer, isDesktop && styles.statsContainerDesktop]}>
+                    <LinearGradient
+                        colors={['#EF4444', '#DC2626']}
+                        style={styles.statCard}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                    >
+                        <View style={styles.statIconContainer}>
+                            <MaterialCommunityIcons name="image-multiple" size={28} color="#fff" />
+                        </View>
                         <Text style={styles.statNumber}>{stats.totalPosters}</Text>
                         <Text style={styles.statLabel}>Total Posters</Text>
-                    </View>
-                    <View style={styles.statCard}>
-                        <MaterialCommunityIcons name="download" size={32} color="#10b981" />
+                    </LinearGradient>
+
+                    <LinearGradient
+                        colors={['#10B981', '#059669']}
+                        style={styles.statCard}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                    >
+                        <View style={styles.statIconContainer}>
+                            <MaterialCommunityIcons name="download" size={28} color="#fff" />
+                        </View>
                         <Text style={styles.statNumber}>{stats.totalDownloads}</Text>
                         <Text style={styles.statLabel}>Total Downloads</Text>
-                    </View>
+                    </LinearGradient>
                 </View>
 
                 {/* Posters Grid */}
-                <View style={styles.postersGrid}>
-                    {posters.map((poster) => (
-                        <View key={poster._id} style={styles.posterCard}>
-                            <Image source={{ uri: poster.imageUrl }} style={styles.posterImage} />
-                            <View style={styles.posterInfo}>
-                                <Text style={styles.posterTitle} numberOfLines={2}>{poster.title}</Text>
-                                <View style={styles.posterMeta}>
-                                    <View style={styles.downloadInfo}>
-                                        <MaterialCommunityIcons name="download" size={16} color="#64748b" />
-                                        <Text style={styles.downloadCount}>{poster.downloadCount}</Text>
-                                    </View>
-                                    <TouchableOpacity
-                                        style={styles.deleteButton}
-                                        onPress={() => deletePoster(poster._id)}
-                                    >
-                                        <MaterialCommunityIcons name="delete" size={20} color={SP_RED} />
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                        </View>
-                    ))}
-                </View>
-
-                {posters.length === 0 && (
+                {posters.length > 0 ? (
+                    <View style={[styles.postersGrid, isDesktop && styles.postersGridDesktop]}>
+                        {posters.map((poster) => renderPosterCard({ item: poster }))}
+                    </View>
+                ) : (
                     <View style={styles.emptyState}>
-                        <MaterialCommunityIcons name="image-off" size={64} color="#cbd5e1" />
+                        <LinearGradient
+                            colors={['#F3F4F6', '#E5E7EB']}
+                            style={styles.emptyIconContainer}
+                        >
+                            <MaterialCommunityIcons name="image-off-outline" size={64} color="#9CA3AF" />
+                        </LinearGradient>
                         <Text style={styles.emptyText}>No posters uploaded yet</Text>
                         <Text style={styles.emptySubtext}>Click the upload button to add your first poster</Text>
                     </View>
@@ -296,57 +343,74 @@ export default function PostersPage() {
             <Modal
                 visible={showUploadModal}
                 transparent
-                animationType="slide"
+                animationType="fade"
                 onRequestClose={() => setShowUploadModal(false)}
             >
                 <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Upload New Poster</Text>
-                            <TouchableOpacity onPress={() => setShowUploadModal(false)}>
-                                <MaterialCommunityIcons name="close" size={24} color="#64748b" />
-                            </TouchableOpacity>
-                        </View>
-
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Poster Title"
-                            value={title}
-                            onChangeText={setTitle}
-                            placeholderTextColor="#94a3b8"
-                        />
-
-                        <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
-                            {selectedImage ? (
-                                <Image source={{ uri: selectedImage.uri }} style={styles.selectedImage} />
-                            ) : (
-                                <View style={styles.imagePickerPlaceholder}>
-                                    <MaterialCommunityIcons name="image-plus" size={48} color="#cbd5e1" />
-                                    <Text style={styles.imagePickerText}>Select Image</Text>
-                                </View>
-                            )}
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={[styles.submitButton, uploading && styles.submitButtonDisabled]}
-                            onPress={uploadPoster}
-                            disabled={uploading}
+                    <View style={[styles.modalContent, isDesktop && styles.modalContentDesktop]}>
+                        <LinearGradient
+                            colors={['#FEF2F2', '#FFFFFF']}
+                            style={styles.modalGradient}
                         >
-                            <LinearGradient colors={[SP_RED, '#b91c1c']} style={styles.submitButtonGradient}>
-                                {uploading ? (
-                                    <ActivityIndicator color="#fff" />
+                            <View style={styles.modalHeader}>
+                                <View>
+                                    <Text style={styles.modalTitle}>📤 Upload New Poster</Text>
+                                    <Text style={styles.modalSubtitle}>Add a new poster to your collection</Text>
+                                </View>
+                                <TouchableOpacity
+                                    onPress={() => setShowUploadModal(false)}
+                                    style={styles.closeButton}
+                                >
+                                    <MaterialCommunityIcons name="close-circle" size={28} color="#64748B" />
+                                </TouchableOpacity>
+                            </View>
+
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Enter poster title..."
+                                value={title}
+                                onChangeText={setTitle}
+                                placeholderTextColor="#94A3B8"
+                            />
+
+                            <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
+                                {selectedImage ? (
+                                    <Image source={{ uri: selectedImage.uri }} style={styles.selectedImage} />
                                 ) : (
-                                    <>
-                                        <MaterialCommunityIcons name="upload" size={20} color="#fff" />
-                                        <Text style={styles.submitButtonText}>Upload Poster</Text>
-                                    </>
+                                    <View style={styles.imagePickerPlaceholder}>
+                                        <MaterialCommunityIcons name="image-plus" size={56} color="#CBD5E1" />
+                                        <Text style={styles.imagePickerText}>Tap to select image</Text>
+                                        <Text style={styles.imagePickerSubtext}>JPG, PNG up to 5MB</Text>
+                                    </View>
                                 )}
-                            </LinearGradient>
-                        </TouchableOpacity>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[styles.submitButton, uploading && styles.submitButtonDisabled]}
+                                onPress={uploadPoster}
+                                disabled={uploading}
+                            >
+                                <LinearGradient
+                                    colors={[SP_RED, '#B91C1C']}
+                                    style={styles.submitButtonGradient}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
+                                >
+                                    {uploading ? (
+                                        <ActivityIndicator color="#fff" />
+                                    ) : (
+                                        <>
+                                            <MaterialCommunityIcons name="cloud-upload" size={22} color="#fff" />
+                                            <Text style={styles.submitButtonText}>Upload Poster</Text>
+                                        </>
+                                    )}
+                                </LinearGradient>
+                            </TouchableOpacity>
+                        </LinearGradient>
                     </View>
                 </View>
             </Modal>
-        </View>
+        </View >
     );
 }
 
@@ -367,34 +431,45 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     loadingText: {
-        marginTop: 12,
+        marginTop: 16,
         fontSize: 16,
-        color: '#64748b',
+        color: '#64748B',
+        fontWeight: '600',
     },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         padding: 20,
+        paddingTop: 24,
+    },
+    headerDesktop: {
+        paddingHorizontal: 40,
+        paddingTop: 32,
+    },
+    headerMobile: {
+        flexWrap: 'wrap',
+        gap: 12,
     },
     title: {
         fontSize: 28,
         fontWeight: '900',
-        color: '#0f172a',
+        color: '#0F172A',
+        marginBottom: 4,
     },
     subtitle: {
         fontSize: 14,
-        color: '#64748b',
-        marginTop: 4,
+        color: '#64748B',
+        fontWeight: '500',
     },
     uploadButton: {
         borderRadius: 12,
         overflow: 'hidden',
-        elevation: 4,
         shadowColor: SP_RED,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 6,
     },
     uploadButtonGradient: {
         flexDirection: 'row',
@@ -405,37 +480,49 @@ const styles = StyleSheet.create({
     },
     uploadButtonText: {
         color: '#fff',
-        fontSize: 14,
+        fontSize: 15,
         fontWeight: '700',
     },
     statsContainer: {
         flexDirection: 'row',
         gap: 16,
         paddingHorizontal: 20,
-        marginBottom: 20,
+        marginBottom: 24,
+    },
+    statsContainerDesktop: {
+        paddingHorizontal: 40,
     },
     statCard: {
         flex: 1,
-        backgroundColor: '#fff',
         padding: 20,
-        borderRadius: 16,
+        borderRadius: 20,
         alignItems: 'center',
-        elevation: 2,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+        elevation: 6,
+    },
+    statIconContainer: {
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 12,
     },
     statNumber: {
         fontSize: 32,
         fontWeight: '900',
-        color: '#0f172a',
+        color: '#fff',
         marginTop: 8,
     },
     statLabel: {
-        fontSize: 12,
-        color: '#64748b',
+        fontSize: 13,
+        color: 'rgba(255, 255, 255, 0.9)',
         marginTop: 4,
+        fontWeight: '600',
     },
     postersGrid: {
         flexDirection: 'row',
@@ -443,32 +530,39 @@ const styles = StyleSheet.create({
         padding: 12,
         gap: 16,
     },
+    postersGridDesktop: {
+        paddingHorizontal: 32,
+    },
     posterCard: {
-        width: '47%',
         backgroundColor: '#fff',
-        borderRadius: 12,
+        borderRadius: 16,
         overflow: 'hidden',
-        elevation: 2,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
+        shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.1,
-        shadowRadius: 2,
+        shadowRadius: 12,
+        elevation: 4,
+        marginBottom: 8,
     },
     posterImage: {
         width: '100%',
-        height: 200,
-        backgroundColor: '#f1f5f9',
+        height: 240,
+        backgroundColor: '#F1F5F9',
     },
-    posterInfo: {
-        padding: 12,
+    posterOverlay: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        padding: 16,
     },
     posterTitle: {
-        fontSize: 14,
+        fontSize: 15,
         fontWeight: '700',
-        color: '#0f172a',
+        color: '#fff',
         marginBottom: 8,
     },
-    posterMeta: {
+    posterActions: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
@@ -476,74 +570,109 @@ const styles = StyleSheet.create({
     downloadInfo: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 4,
+        gap: 6,
+        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 12,
     },
     downloadCount: {
-        fontSize: 12,
-        color: '#64748b',
-        fontWeight: '600',
+        fontSize: 13,
+        color: '#fff',
+        fontWeight: '700',
     },
     deleteButton: {
-        padding: 4,
+        backgroundColor: 'rgba(239, 68, 68, 0.9)',
+        padding: 8,
+        borderRadius: 10,
     },
     emptyState: {
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: 60,
+        paddingVertical: 80,
+        paddingHorizontal: 20,
+    },
+    emptyIconContainer: {
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 24,
     },
     emptyText: {
-        fontSize: 18,
+        fontSize: 20,
         fontWeight: '700',
-        color: '#64748b',
+        color: '#64748B',
         marginTop: 16,
     },
     emptySubtext: {
         fontSize: 14,
-        color: '#94a3b8',
-        marginTop: 4,
+        color: '#94A3B8',
+        marginTop: 8,
+        textAlign: 'center',
     },
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
         justifyContent: 'center',
         alignItems: 'center',
         padding: 20,
     },
     modalContent: {
-        backgroundColor: '#fff',
-        borderRadius: 20,
-        padding: 24,
         width: '100%',
         maxWidth: 500,
+        borderRadius: 24,
+        overflow: 'hidden',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.3,
+        shadowRadius: 20,
+        elevation: 10,
+    },
+    modalContentDesktop: {
+        maxWidth: 600,
+    },
+    modalGradient: {
+        padding: 28,
     },
     modalHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 20,
+        alignItems: 'flex-start',
+        marginBottom: 24,
     },
     modalTitle: {
-        fontSize: 20,
+        fontSize: 22,
         fontWeight: '900',
-        color: '#0f172a',
+        color: '#0F172A',
+    },
+    modalSubtitle: {
+        fontSize: 13,
+        color: '#64748B',
+        marginTop: 4,
+    },
+    closeButton: {
+        padding: 4,
     },
     input: {
-        backgroundColor: '#f8f9fa',
-        borderRadius: 12,
+        backgroundColor: '#fff',
+        borderRadius: 14,
         padding: 16,
         fontSize: 16,
-        color: '#0f172a',
-        marginBottom: 16,
-        borderWidth: 1,
-        borderColor: '#e2e8f0',
-    },
-    imagePicker: {
-        height: 200,
-        borderRadius: 12,
-        overflow: 'hidden',
+        color: '#0F172A',
         marginBottom: 20,
         borderWidth: 2,
-        borderColor: '#e2e8f0',
+        borderColor: '#E2E8F0',
+        fontWeight: '500',
+    },
+    imagePicker: {
+        height: 220,
+        borderRadius: 16,
+        overflow: 'hidden',
+        marginBottom: 24,
+        borderWidth: 2,
+        borderColor: '#E2E8F0',
         borderStyle: 'dashed',
     },
     selectedImage: {
@@ -554,18 +683,28 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f8f9fa',
+        backgroundColor: '#F8FAFC',
     },
     imagePickerText: {
-        marginTop: 8,
-        fontSize: 14,
-        color: '#94a3b8',
-        fontWeight: '600',
+        marginTop: 12,
+        fontSize: 15,
+        color: '#64748B',
+        fontWeight: '700',
+    },
+    imagePickerSubtext: {
+        marginTop: 4,
+        fontSize: 12,
+        color: '#94A3B8',
+        fontWeight: '500',
     },
     submitButton: {
-        borderRadius: 12,
+        borderRadius: 14,
         overflow: 'hidden',
-        elevation: 4,
+        shadowColor: SP_RED,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 6,
     },
     submitButtonDisabled: {
         opacity: 0.6,
@@ -574,12 +713,12 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 8,
-        paddingVertical: 16,
+        gap: 10,
+        paddingVertical: 18,
     },
     submitButtonText: {
         color: '#fff',
         fontSize: 16,
-        fontWeight: '700',
+        fontWeight: '800',
     },
 });

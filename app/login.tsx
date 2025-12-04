@@ -1,14 +1,34 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Platform } from 'react-native';
 import { useRouter, Link } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5001/api';
+// Platform-aware API URL
+const getApiUrl = () => {
+    // If on Android, use the IP address instead of localhost
+    // You need to replace this with your computer's local IP address
+    if (Platform.OS === 'android') {
+        return 'http://192.168.1.46:5001/api'; // Your computer's IP
+    }
+    if (Platform.OS === 'ios') {
+        return 'http://localhost:5001/api'; // iOS simulator can use localhost
+    }
+    // For web
+    let url = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5001';
+    if (!url.endsWith('/api')) {
+        url += '/api';
+    }
+    return url;
+};
+
+const API_URL = getApiUrl();
 
 export default function LoginScreen() {
     const router = useRouter();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
 
     const handleLogin = async () => {
@@ -77,13 +97,25 @@ export default function LoginScreen() {
                 />
 
                 <Text style={styles.label}>Password</Text>
-                <TextInput
-                    style={styles.input}
-                    placeholder="Enter password"
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry
-                />
+                <View style={styles.passwordContainer}>
+                    <TextInput
+                        style={styles.passwordInput}
+                        placeholder="Enter password"
+                        value={password}
+                        onChangeText={setPassword}
+                        secureTextEntry={!showPassword}
+                    />
+                    <TouchableOpacity
+                        style={styles.eyeIcon}
+                        onPress={() => setShowPassword(!showPassword)}
+                    >
+                        <MaterialCommunityIcons
+                            name={showPassword ? "eye-off" : "eye"}
+                            size={24}
+                            color="#666"
+                        />
+                    </TouchableOpacity>
+                </View>
 
                 <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
                     {loading ? (
@@ -170,5 +202,21 @@ const styles = StyleSheet.create({
     link: {
         color: '#E30512',
         fontWeight: 'bold',
+    },
+    passwordContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#ddd',
+        borderRadius: 5,
+        marginBottom: 15,
+    },
+    passwordInput: {
+        flex: 1,
+        padding: 12,
+        fontSize: 16,
+    },
+    eyeIcon: {
+        padding: 12,
     },
 });

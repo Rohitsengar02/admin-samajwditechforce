@@ -96,11 +96,14 @@ export default function DistrictListPage() {
 
     // Auto-detect platform and use correct API URL
     const getApiUrl = () => {
-        const baseUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000';
         if (Platform.OS === 'android') {
-            return baseUrl.replace('localhost', '10.0.2.2');
+            return 'http://192.168.1.46:5001/api';
         }
-        return baseUrl;
+        if (Platform.OS === 'ios') {
+            return 'http://localhost:5001/api';
+        }
+        const baseUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5001';
+        return baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
     };
 
     const API_URL = `${getApiUrl()}/districts`;

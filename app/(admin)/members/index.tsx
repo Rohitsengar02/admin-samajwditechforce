@@ -144,18 +144,23 @@ export default function MembersPage() {
         let url = process.env.EXPO_PUBLIC_API_URL;
         if (!url) {
             if (Platform.OS === 'android') {
-                url = 'http://10.0.2.2:5000/api';
+                url = 'http://192.168.1.46:5001/api'; // Your computer's IP
+            } else if (Platform.OS === 'ios') {
+                url = 'http://localhost:5001/api';
             } else {
-                url = 'http://localhost:5000/api';
+                url = 'http://localhost:5001/api';
             }
         } else if (!url.endsWith('/api')) {
             url = `${url}/api`;
         }
 
+        // Replace localhost with actual IP for Android
         if (Platform.OS === 'android') {
-            if (url.includes('localhost')) url = url.replace('localhost', '192.168.1.39');
-            if (url.includes('127.0.0.1')) url = url.replace('127.0.0.1', '192.168.1.39');
-            if (url.includes('10.0.2.2')) url = url.replace('10.0.2.2', '192.168.1.39');
+            if (url.includes('localhost')) url = url.replace('localhost', '192.168.1.46');
+            if (url.includes('127.0.0.1')) url = url.replace('127.0.0.1', '192.168.1.46');
+            if (url.includes('10.0.2.2')) url = url.replace('10.0.2.2', '192.168.1.46');
+            // Fix port if needed
+            if (url.includes(':5000')) url = url.replace(':5000', ':5001');
         }
         return url;
     };

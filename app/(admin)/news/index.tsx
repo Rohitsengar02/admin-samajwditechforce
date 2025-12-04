@@ -14,10 +14,13 @@ import { Platform } from 'react-native';
 
 const getApiUrl = () => {
     if (Platform.OS === 'android') {
-        return 'http://192.168.1.39:5000/api';
+        return 'http://192.168.1.46:5001/api';
     }
-    if (process.env.EXPO_PUBLIC_API_URL) return process.env.EXPO_PUBLIC_API_URL;
-    return 'http://localhost:5000/api';
+    if (Platform.OS === 'ios') {
+        return 'http://localhost:5001/api';
+    }
+    const baseUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5001';
+    return baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
 };
 
 const API_URL = `${getApiUrl()}/news`;

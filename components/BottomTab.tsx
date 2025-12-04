@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, Platform, Modal, ScrollView, Dimensions, Animated, Easing } from 'react-native';
+import { View, Text, TouchableOpacity, Platform, Modal, ScrollView, Dimensions, Animated } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
@@ -17,10 +17,11 @@ import {
     Vote,
     Settings,
     Newspaper,
+    UserCheck,
     LucideIcon
 } from 'lucide-react-native';
 
-const screenHeight = Dimensions.get('window').height;
+const { width: screenWidth } = Dimensions.get('window');
 
 interface BottomTabProps {
     onMenuPress?: () => void;
@@ -33,83 +34,98 @@ interface MenuItem {
     gradient: [string, string];
 }
 
-const ALL_MENU_ITEMS: MenuItem[] = [
+// Fixed bottom tabs (2 left + FAB + 2 right = 5 total)
+const BOTTOM_TABS: MenuItem[] = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/(admin)/dashboard', gradient: ['#4F46E5', '#4338ca'] },
     { name: 'Members', icon: Users, path: '/(admin)/members', gradient: ['#EC4899', '#DB2777'] },
-    { name: 'Digital IDs', icon: CreditCard, path: '/(admin)/digital-id', gradient: ['#8B5CF6', '#7C3AED'] },
+    // FAB in middle
     { name: 'Districts', icon: Map, path: '/(admin)/districts', gradient: ['#F59E0B', '#D97706'] },
-    { name: 'Training', icon: BookOpen, path: '/(admin)/training', gradient: ['#10B981', '#059669'] },
-    { name: 'Posters', icon: ImageIcon, path: '/posters', gradient: ['#F97316', '#EA580C'] },
-    { name: 'News', icon: Newspaper, path: '/(admin)/news', gradient: ['#0ea5e9', '#0284c7'] },
     { name: 'Tasks', icon: CheckSquare, path: '/(admin)/tasks', gradient: ['#6366f1', '#8b5cf6'] },
+];
+
+// Carousel items (remaining menu items)
+const CAROUSEL_ITEMS: MenuItem[] = [
+    { name: 'Approvals', icon: UserCheck, path: '/(admin)/approvals', gradient: ['#10B981', '#059669'] },
+    { name: 'Verifications', icon: CheckSquare, path: '/(admin)/verifications', gradient: ['#0EA5E9', '#0284C7'] },
+    { name: 'Digital IDs', icon: CreditCard, path: '/(admin)/digital-id', gradient: ['#8B5CF6', '#7C3AED'] },
+    { name: 'Training', icon: BookOpen, path: '/(admin)/training', gradient: ['#10B981', '#059669'] },
+    { name: 'Posters', icon: ImageIcon, path: '/(admin)/posters', gradient: ['#F97316', '#EA580C'] },
+    { name: 'News', icon: Newspaper, path: '/(admin)/news', gradient: ['#0ea5e9', '#0284c7'] },
     { name: 'Resources', icon: FileText, path: '/(admin)/resources', gradient: ['#EC4899', '#DB2777'] },
     { name: 'Communication', icon: MessageSquare, path: '/(admin)/communication', gradient: ['#10b981', '#059669'] },
     { name: 'Election', icon: Vote, path: '/(admin)/election', gradient: ['#EF4444', '#DC2626'] },
     { name: 'Settings', icon: Settings, path: '/(admin)/settings', gradient: ['#64748B', '#475569'] },
 ];
 
-const TabItem = ({ item, isActive, onPress }: { item: any, isActive: boolean, onPress: () => void }) => {
+const TabItem = ({ item, isActive, onPress }: { item: MenuItem, isActive: boolean, onPress: () => void }) => {
     const scaleAnim = useRef(new Animated.Value(1)).current;
-    const translateYAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
-        if (isActive) {
-            Animated.parallel([
-                Animated.spring(scaleAnim, {
-                    toValue: 1.1,
-                    useNativeDriver: true,
-                    friction: 5,
-                }),
-                Animated.spring(translateYAnim, {
-                    toValue: -5,
-                    useNativeDriver: true,
-                    friction: 5,
-                })
-            ]).start();
-        } else {
-            Animated.parallel([
-                Animated.spring(scaleAnim, {
-                    toValue: 1,
-                    useNativeDriver: true,
-                    friction: 5,
-                }),
-                Animated.spring(translateYAnim, {
-                    toValue: 0,
-                    useNativeDriver: true,
-                    friction: 5,
-                })
-            ]).start();
-        }
+        Animated.spring(scaleAnim, {
+            toValue: isActive ? 1.1 : 1,
+            useNativeDriver: true,
+            friction: 5,
+        }).start();
     }, [isActive]);
 
     return (
         <TouchableOpacity
             onPress={onPress}
             activeOpacity={0.7}
-            className="items-center justify-center w-16"
+            style={{ alignItems: 'center', justifyContent: 'center', width: 64 }}
         >
-            <Animated.View style={{ transform: [{ scale: scaleAnim }, { translateY: translateYAnim }] }}>
+            <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
                 {isActive ? (
                     <LinearGradient
-                        colors={['#4F46E5', '#4338ca']}
-                        className="p-2.5 rounded-2xl shadow-lg shadow-indigo-500/40"
+                        colors={item.gradient}
+                        style={{ padding: 10, borderRadius: 16, shadowColor: item.gradient[0], shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 }}
                     >
                         <item.icon size={22} color="white" />
                     </LinearGradient>
                 ) : (
-                    <View className="p-2.5">
+                    <View style={{ padding: 10 }}>
                         <item.icon size={24} color="#9CA3AF" />
                     </View>
                 )}
             </Animated.View>
             {isActive && (
-                <Animated.Text
-                    style={{ opacity: scaleAnim }}
-                    className="text-[10px] mt-1 font-bold text-indigo-600"
-                >
+                <Text style={{ fontSize: 10, marginTop: 4, fontWeight: 'bold', color: item.gradient[0] }}>
                     {item.name}
-                </Animated.Text>
+                </Text>
             )}
+        </TouchableOpacity>
+    );
+};
+
+const CarouselItem = ({ item, onPress }: { item: MenuItem, onPress: () => void }) => {
+    return (
+        <TouchableOpacity
+            onPress={onPress}
+            activeOpacity={0.8}
+            style={{ alignItems: 'center', marginHorizontal: 12 }}
+        >
+            <LinearGradient
+                colors={item.gradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: 40,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    shadowColor: item.gradient[0],
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.4,
+                    shadowRadius: 10,
+                    elevation: 8
+                }}
+            >
+                <item.icon size={32} color="white" />
+            </LinearGradient>
+            <Text style={{ fontSize: 12, marginTop: 8, fontWeight: '600', color: '#374151', textAlign: 'center', maxWidth: 80 }}>
+                {item.name}
+            </Text>
         </TouchableOpacity>
     );
 };
@@ -118,33 +134,26 @@ export default function BottomTab({ onMenuPress }: BottomTabProps) {
     const router = useRouter();
     const pathname = usePathname();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const menuAnim = useRef(new Animated.Value(0)).current;
-
-    const TABS = [
-        { name: 'Home', icon: LayoutDashboard, path: '/(admin)/dashboard' },
-        { name: 'Members', icon: Users, path: '/(admin)/members' },
-        { name: 'Posters', icon: ImageIcon, path: '/posters' },
-        { name: 'Tasks', icon: CheckSquare, path: '/(admin)/tasks' },
-        { name: 'Districts', icon: Map, path: '/(admin)/districts' },
-    ];
+    const slideAnim = useRef(new Animated.Value(300)).current;
 
     useEffect(() => {
         if (isMenuOpen) {
-            Animated.spring(menuAnim, {
-                toValue: 1,
+            Animated.spring(slideAnim, {
+                toValue: 0,
                 useNativeDriver: true,
                 damping: 20,
                 stiffness: 90
             }).start();
         } else {
-            Animated.timing(menuAnim, {
-                toValue: 0,
-                duration: 200,
+            Animated.timing(slideAnim, {
+                toValue: 300,
+                duration: 250,
                 useNativeDriver: true
             }).start();
         }
     }, [isMenuOpen]);
 
+    // Hide on desktop
     if (Platform.OS === 'web' && typeof window !== 'undefined' && window.innerWidth >= 768) {
         return null;
     }
@@ -154,41 +163,51 @@ export default function BottomTab({ onMenuPress }: BottomTabProps) {
         router.push(path as any);
     };
 
-    const menuTranslateY = menuAnim.interpolate({
-        inputRange: [0, 1],
-        outputRange: [screenHeight, 0]
-    });
-
     return (
         <>
-            <View className="absolute bottom-0 w-full z-40">
+            <View style={{ position: 'absolute', bottom: 0, width: '100%', zIndex: 40 }}>
                 {/* Glassmorphism Background */}
-                <View className="absolute bottom-0 w-full h-24 bg-white/90 shadow-2xl border-t border-gray-100 rounded-t-[30px]" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: -5 }, shadowOpacity: 0.1, shadowRadius: 10 }} />
+                <View style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    width: '100%',
+                    height: 90,
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    borderTopLeftRadius: 30,
+                    borderTopRightRadius: 30,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: -5 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 15,
+                    elevation: 10,
+                    borderTopWidth: 1,
+                    borderTopColor: 'rgba(229, 231, 235, 0.5)'
+                }} />
 
-                {/* Floating Action Button Container */}
-                <View className="absolute -top-8 left-1/2 -ml-9 z-50">
+                {/* Floating Action Button */}
+                <View style={{ position: 'absolute', top: -28, left: '50%', marginLeft: -28, zIndex: 50 }}>
                     <TouchableOpacity
                         onPress={() => setIsMenuOpen(true)}
                         activeOpacity={0.9}
                     >
-                        <View className="p-1.5 bg-gray-50 rounded-full shadow-sm">
+                        <View style={{ padding: 4, backgroundColor: '#F9FAFB', borderRadius: 100, shadowColor: '#EF4444', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 }}>
                             <LinearGradient
                                 colors={['#EF4444', '#DC2626']}
-                                className="w-16 h-16 rounded-full items-center justify-center shadow-lg shadow-red-500/50"
+                                style={{ width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' }}
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 1 }}
                             >
-                                <Plus size={32} color="white" />
+                                <Plus size={28} color="white" strokeWidth={3} />
                             </LinearGradient>
                         </View>
                     </TouchableOpacity>
                 </View>
 
                 {/* Tab Items */}
-                <View className="flex-row justify-between items-end px-4 pb-4 h-24">
-                    {/* Left Tabs */}
-                    <View className="flex-row flex-1 justify-around pb-2">
-                        {TABS.slice(0, 2).map((tab) => (
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', paddingHorizontal: 16, paddingBottom: 16, height: 90 }}>
+                    {/* Left 2 Tabs */}
+                    <View style={{ flexDirection: 'row', flex: 1, justifyContent: 'space-around', paddingBottom: 8 }}>
+                        {BOTTOM_TABS.slice(0, 2).map((tab) => (
                             <TabItem
                                 key={tab.name}
                                 item={tab}
@@ -199,11 +218,11 @@ export default function BottomTab({ onMenuPress }: BottomTabProps) {
                     </View>
 
                     {/* Spacer for FAB */}
-                    <View className="w-20" />
+                    <View style={{ width: 80 }} />
 
-                    {/* Right Tabs */}
-                    <View className="flex-row flex-1 justify-around pb-2">
-                        {TABS.slice(2).map((tab) => (
+                    {/* Right 2 Tabs */}
+                    <View style={{ flexDirection: 'row', flex: 1, justifyContent: 'space-around', paddingBottom: 8 }}>
+                        {BOTTOM_TABS.slice(2).map((tab) => (
                             <TabItem
                                 key={tab.name}
                                 item={tab}
@@ -215,67 +234,61 @@ export default function BottomTab({ onMenuPress }: BottomTabProps) {
                 </View>
             </View>
 
-            {/* Full Screen Menu Modal */}
+            {/* Bottom Sheet Modal with Horizontal Carousel */}
             <Modal
                 visible={isMenuOpen}
                 transparent={true}
-                animationType="none"
+                animationType="fade"
                 onRequestClose={() => setIsMenuOpen(false)}
             >
-                <View className="flex-1 bg-black/60 justify-end">
+                <View style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'flex-end' }}>
                     <TouchableOpacity
-                        className="flex-1"
+                        style={{ flex: 1 }}
                         onPress={() => setIsMenuOpen(false)}
                     />
                     <Animated.View
-                        style={{ transform: [{ translateY: menuTranslateY }] }}
-                        className="bg-gray-50 rounded-t-[40px] overflow-hidden max-h-[85%]"
+                        style={{
+                            transform: [{ translateY: slideAnim }],
+                            backgroundColor: '#F9FAFB',
+                            borderTopLeftRadius: 32,
+                            borderTopRightRadius: 32,
+                            paddingBottom: 32,
+                            maxHeight: 280
+                        }}
                     >
-                        <View className="items-center pt-4 pb-2">
-                            <View className="w-12 h-1.5 bg-gray-300 rounded-full" />
+                        {/* Handle Bar */}
+                        <View style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 8 }}>
+                            <View style={{ width: 40, height: 4, backgroundColor: '#D1D5DB', borderRadius: 2 }} />
                         </View>
 
-                        <View className="px-6 pb-6 flex-row justify-between items-center">
+                        {/* Header */}
+                        <View style={{ paddingHorizontal: 20, paddingBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                             <View>
-                                <Text className="text-2xl font-bold text-gray-900">Menu</Text>
-                                <Text className="text-gray-500 text-sm">Quick access to all modules</Text>
+                                <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#111827' }}>Quick Access</Text>
+                                <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 2 }}>Tap to navigate</Text>
                             </View>
                             <TouchableOpacity
                                 onPress={() => setIsMenuOpen(false)}
-                                className="bg-gray-200 p-2.5 rounded-full"
+                                style={{ backgroundColor: '#E5E7EB', padding: 8, borderRadius: 20 }}
                             >
                                 <X size={20} color="#4B5563" />
                             </TouchableOpacity>
                         </View>
 
-                        <ScrollView className="px-4 pb-8" showsVerticalScrollIndicator={false}>
-                            <View className="flex-row flex-wrap justify-between">
-                                {ALL_MENU_ITEMS.map((item, index) => (
-                                    <TouchableOpacity
-                                        key={item.name}
-                                        onPress={() => handleNavigation(item.path)}
-                                        className="w-[48%] mb-4"
-                                        activeOpacity={0.8}
-                                    >
-                                        <LinearGradient
-                                            colors={item.gradient}
-                                            start={{ x: 0, y: 0 }}
-                                            end={{ x: 1, y: 1 }}
-                                            className="p-5 rounded-3xl h-36 justify-between shadow-lg"
-                                            style={{ shadowColor: item.gradient[0], shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 }}
-                                        >
-                                            <View className="bg-white/25 w-12 h-12 rounded-2xl items-center justify-center backdrop-blur-sm">
-                                                <item.icon size={24} color="white" />
-                                            </View>
-                                            <View>
-                                                <Text className="text-white font-bold text-lg">{item.name}</Text>
-                                                <Text className="text-white/70 text-xs font-medium mt-1">Tap to open</Text>
-                                            </View>
-                                        </LinearGradient>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-                            <View className="h-8" />
+                        {/* Horizontal Carousel */}
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 8 }}
+                            style={{ flexGrow: 0 }}
+                        >
+                            {CAROUSEL_ITEMS.map((item) => (
+                                <CarouselItem
+                                    key={item.name}
+                                    item={item}
+                                    onPress={() => handleNavigation(item.path)}
+                                />
+                            ))}
                         </ScrollView>
                     </Animated.View>
                 </View>
