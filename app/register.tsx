@@ -5,13 +5,8 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 // Platform-aware API URL
 const getApiUrl = () => {
-    if (Platform.OS === 'android') {
-        return 'http://192.168.1.46:5001/api'; // Your computer's IP
-    }
-    if (Platform.OS === 'ios') {
-        return 'http://localhost:5001/api';
-    }
-    let url = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5001';
+    let url = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5001/api';
+    // Ensure URL ends with /api
     if (!url.endsWith('/api')) {
         url += '/api';
     }
@@ -55,12 +50,16 @@ export default function RegisterScreen() {
 
             if (response.ok) {
                 Alert.alert(
-                    '✅ Request Sent Successfully!',
-                    '🔄 Your admin registration request has been submitted.\n\n⏳ Status: PENDING FOR APPROVAL\n\n👨‍💼 A Master Admin will review your request shortly.\n\n✉️ You will be able to login once your account is approved.',
-                    [{
-                        text: 'Got it!',
-                        onPress: () => router.replace('/login')
-                    }]
+                    '✅ Application Submitted!',
+                    '📋 Your admin registration has been received successfully!\n\n⏳ Status: OUT FOR ADMIN APPROVAL\n\n👨‍💼 A Master Admin will review your application shortly.\n\n📧 You will receive notification once approved.\n\n✉️ You can login after approval.',
+                    [
+                        {
+                            text: 'Understood',
+                            style: 'default',
+                            onPress: () => router.replace('/login')
+                        }
+                    ],
+                    { cancelable: false }
                 );
             } else {
                 Alert.alert('Registration Failed', data.message || 'Something went wrong');

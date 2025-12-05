@@ -6,16 +6,8 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 // Platform-aware API URL
 const getApiUrl = () => {
-    // If on Android, use the IP address instead of localhost
-    // You need to replace this with your computer's local IP address
-    if (Platform.OS === 'android') {
-        return 'http://192.168.1.46:5001/api'; // Your computer's IP
-    }
-    if (Platform.OS === 'ios') {
-        return 'http://localhost:5001/api'; // iOS simulator can use localhost
-    }
-    // For web
-    let url = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5001';
+    let url = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5001/api';
+    // Ensure URL ends with /api
     if (!url.endsWith('/api')) {
         url += '/api';
     }

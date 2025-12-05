@@ -118,6 +118,36 @@ export default function SettingsPage() {
                     onPress={() => router.push('/(admin)/settings/roles' as any)}
                 />
 
+                <Text className="text-gray-500 font-bold text-sm mb-3 ml-2 mt-4 uppercase tracking-wider">Legal & Information</Text>
+                <SettingItem
+                    icon={Shield}
+                    title="Privacy Policy"
+                    subtitle="How we protect your data"
+                    color="bg-blue-600"
+                    onPress={() => router.push('/(admin)/settings/privacy-policy' as any)}
+                />
+                <SettingItem
+                    icon={Settings}
+                    title="Terms & Conditions"
+                    subtitle="User agreement & guidelines"
+                    color="bg-slate-600"
+                    onPress={() => router.push('/(admin)/settings/terms-conditions' as any)}
+                />
+                <SettingItem
+                    icon={Shield}
+                    title="Child Safety"
+                    subtitle="Child protection policy"
+                    color="bg-red-600"
+                    onPress={() => router.push('/(admin)/settings/child-safety' as any)}
+                />
+                <SettingItem
+                    icon={Users}
+                    title="About Us"
+                    subtitle="Learn about Samajwadi Tech Force"
+                    color="bg-green-600"
+                    onPress={() => router.push('/(admin)/settings/about' as any)}
+                />
+
                 <TouchableOpacity
                     onPress={handleLogout}
                     className="mt-6 bg-red-50 p-4 rounded-2xl flex-row items-center justify-center border border-red-100"
