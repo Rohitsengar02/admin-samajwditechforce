@@ -122,13 +122,7 @@ export default function TasksPage() {
                             color="bg-amber-600"
                             onPress={() => router.push('/(admin)/tasks/submissions' as any)}
                         />
-                        <QuickActionCard
-                            icon={Gift}
-                            title="Rewards"
-                            description="Assign rewards"
-                            color="bg-purple-600"
-                            onPress={() => router.push('/(admin)/tasks/rewards' as any)}
-                        />
+
                     </View>
                 </View>
 

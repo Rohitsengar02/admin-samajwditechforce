@@ -4,24 +4,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Upload, Image as ImageIcon, Video, FileText, CheckCircle, X } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { getApiUrl } from '../../../utils/api';
 
 const screenWidth = Dimensions.get('window').width;
 const AnimatedBubble = ({ size, top, left }: { size: number; top: number; left: number }) => (
     <View style={{ position: 'absolute', width: size, height: size, top, left, backgroundColor: 'rgba(255, 255, 255, 0.1)', borderRadius: size / 2, opacity: 0.6 }} />
 );
 
-const getApiUrl = () => {
-    if (Platform.OS === 'android') {
-        return 'http://192.168.1.46:5001/api/resources';
-    }
-    if (Platform.OS === 'ios') {
-        return 'http://localhost:5001/api/resources';
-    }
-    if (process.env.EXPO_PUBLIC_API_URL) return `${process.env.EXPO_PUBLIC_API_URL}/api/resources`;
-    return 'http://localhost:5001/api/resources';
-};
-
-const API_URL = getApiUrl();
+const API_URL = `${getApiUrl()}/resources`;
 const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dssmutzly/image/upload';
 const UPLOAD_PRESET = 'multimallpro';
 

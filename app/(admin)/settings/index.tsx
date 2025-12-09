@@ -4,8 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
-    Settings, Moon, Globe, Shield, Key, Mail, Users,
-    ChevronRight, LogOut, Smartphone
+    Settings, Shield, FileText, Users, LogOut, ChevronRight
 } from 'lucide-react-native';
 
 const screenWidth = Dimensions.get('window').width;
@@ -44,7 +43,7 @@ export default function SettingsPage() {
                     style: 'destructive',
                     onPress: async () => {
                         await AsyncStorage.clear();
-                        router.replace('/login');
+                        router.replace('/login' as any);
                     },
                 },
             ]
@@ -70,52 +69,13 @@ export default function SettingsPage() {
             </View>
 
             <View className="px-4 pb-8">
-                <Text className="text-gray-500 font-bold text-sm mb-3 ml-2 uppercase tracking-wider">General</Text>
+                <Text className="text-gray-500 font-bold text-sm mb-3 ml-2 uppercase tracking-wider">Content</Text>
                 <SettingItem
-                    icon={Smartphone}
-                    title="App Settings"
-                    subtitle="General configuration"
-                    color="bg-slate-600"
-                    onPress={() => router.push('/(admin)/settings/app-settings' as any)}
-                />
-                <SettingItem
-                    icon={Moon}
-                    title="Theme Management"
-                    subtitle="Dark mode & colors"
+                    icon={FileText}
+                    title="Page Management"
+                    subtitle="Create & manage pages"
                     color="bg-indigo-600"
-                    onPress={() => router.push('/(admin)/settings/theme' as any)}
-                />
-                <SettingItem
-                    icon={Globe}
-                    title="Language"
-                    subtitle="Hindi / English"
-                    color="bg-blue-600"
-                    onPress={() => router.push('/(admin)/settings/language' as any)}
-                />
-
-                <Text className="text-gray-500 font-bold text-sm mb-3 ml-2 mt-4 uppercase tracking-wider">Integrations</Text>
-                <SettingItem
-                    icon={Mail}
-                    title="SMTP Settings"
-                    subtitle="Email configuration"
-                    color="bg-emerald-600"
-                    onPress={() => router.push('/(admin)/settings/smtp' as any)}
-                />
-                <SettingItem
-                    icon={Key}
-                    title="API Keys"
-                    subtitle="Maps & Notifications"
-                    color="bg-amber-600"
-                    onPress={() => router.push('/(admin)/settings/api-keys' as any)}
-                />
-
-                <Text className="text-gray-500 font-bold text-sm mb-3 ml-2 mt-4 uppercase tracking-wider">Security</Text>
-                <SettingItem
-                    icon={Users}
-                    title="Roles & Permissions"
-                    subtitle="Admin access control"
-                    color="bg-purple-600"
-                    onPress={() => router.push('/(admin)/settings/roles' as any)}
+                    onPress={() => router.push('/(admin)/pages' as any)}
                 />
 
                 <Text className="text-gray-500 font-bold text-sm mb-3 ml-2 mt-4 uppercase tracking-wider">Legal & Information</Text>

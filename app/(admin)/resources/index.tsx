@@ -1,12 +1,12 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Dimensions, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import {
     Upload, Image as ImageIcon, Video, FileText, Download,
     Plus, TrendingUp, Eye, BarChart3
 } from 'lucide-react-native';
-import { Platform } from 'react-native';
+import { getApiUrl } from '../../../utils/api';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -14,18 +14,7 @@ const AnimatedBubble = ({ size, top, left }: { size: number; top: number; left: 
     <View style={{ position: 'absolute', width: size, height: size, top, left, backgroundColor: 'rgba(255, 255, 255, 0.1)', borderRadius: size / 2, opacity: 0.6 }} />
 );
 
-const getApiUrl = () => {
-    if (Platform.OS === 'android') {
-        return 'http://192.168.1.46:5001/api/resources';
-    }
-    if (Platform.OS === 'ios') {
-        return 'http://localhost:5001/api/resources';
-    }
-    if (process.env.EXPO_PUBLIC_API_URL) return `${process.env.EXPO_PUBLIC_API_URL}/api/resources`;
-    return 'http://localhost:5001/api/resources';
-};
-
-const API_URL = getApiUrl();
+const API_URL = `${getApiUrl()}/resources`;
 
 const StatCard = ({ icon: Icon, label, value, color, bgColor }: any) => (
     <View className="flex-1 m-2">

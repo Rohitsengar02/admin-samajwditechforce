@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, TextInput, Dimensions, Activi
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { ArrowLeft, Send, Bell, Users, CheckCircle } from 'lucide-react-native';
+import { getApiUrl } from '../../../utils/api';
 
 const screenWidth = Dimensions.get('window').width;
 const AnimatedBubble = ({ size, top, left }: { size: number; top: number; left: number }) => (
@@ -22,15 +23,7 @@ export default function NotificationsPage() {
         target: 'all',
     });
 
-    const getApiUrl = () => {
-        const baseUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000';
-        if (Platform.OS === 'android') {
-            return baseUrl.replace('localhost', '10.0.2.2');
-        }
-        return baseUrl;
-    };
-
-    const API_URL = `${getApiUrl()}/api/notifications`;
+    const API_URL = `${getApiUrl()}/notifications`;
 
     const fetchHistory = async () => {
         try {

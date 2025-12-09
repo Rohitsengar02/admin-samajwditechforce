@@ -86,7 +86,7 @@ export default function MemberDetailPage() {
     }
 
     return (
-        <ScrollView className="flex-1 bg-gray-50" showsVerticalScrollIndicator={false}>
+        <ScrollView className="flex-1 mb-24 bg-gray-50" showsVerticalScrollIndicator={false}>
             {/* Header with Profile */}
             <View className="relative overflow-hidden">
                 <LinearGradient colors={['#6366f1', '#8b5cf6']} className="pt-12 pb-32 px-6">
@@ -97,9 +97,7 @@ export default function MemberDetailPage() {
                         <TouchableOpacity onPress={() => router.back()} className="bg-white/20 p-2 rounded-xl">
                             <ArrowLeft size={24} color="white" />
                         </TouchableOpacity>
-                        <TouchableOpacity className="bg-white/20 p-2 rounded-xl">
-                            <Edit size={20} color="white" />
-                        </TouchableOpacity>
+
                     </View>
 
                     <View className="items-center">
@@ -145,25 +143,7 @@ export default function MemberDetailPage() {
                     </View>
                 </View>
 
-                {/* Quick Actions */}
-                <View className="flex-row space-x-3 mb-6">
-                    <TouchableOpacity
-                        onPress={() => router.push(`/(admin)/members/${member._id}/chat` as any)}
-                        className="flex-1"
-                    >
-                        <LinearGradient
-                            colors={['#6366f1', '#8b5cf6']}
-                            className="py-4 rounded-2xl items-center flex-row justify-center"
-                        >
-                            <MessageCircle size={20} color="white" />
-                            <Text className="text-white font-bold ml-2">Message</Text>
-                        </LinearGradient>
-                    </TouchableOpacity>
 
-                    <TouchableOpacity className="bg-white border-2 border-indigo-200 py-4 px-6 rounded-2xl">
-                        <Phone size={20} color="#6366f1" />
-                    </TouchableOpacity>
-                </View>
 
                 {/* Contact Information */}
                 <View className="bg-white rounded-3xl p-6 shadow-lg mb-6">
@@ -245,14 +225,7 @@ export default function MemberDetailPage() {
                     ))}
                 </View>
 
-                {/* Danger Zone */}
-                <View className="bg-white rounded-3xl p-6 shadow-lg mb-8 border border-red-100">
-                    <Text className="text-gray-800 font-bold text-lg mb-3">Danger Zone</Text>
-                    <TouchableOpacity className="bg-red-50 border border-red-200 py-3 rounded-xl items-center flex-row justify-center">
-                        <Trash2 size={18} color="#EF4444" />
-                        <Text className="text-red-600 font-semibold ml-2">Delete Member</Text>
-                    </TouchableOpacity>
-                </View>
+
             </View>
         </ScrollView>
     );

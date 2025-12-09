@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Dimensions, ActivityIndicator, Platform, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Dimensions, ActivityIndicator, Platform, RefreshControl, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
@@ -7,6 +7,8 @@ import {
     ArrowLeft, Search, Filter, Edit, Trash2, Award, Users,
     Calendar, CheckCircle, XCircle, AlertCircle
 } from 'lucide-react-native';
+import { getApiUrl } from '../../../utils/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -14,7 +16,7 @@ const AnimatedBubble = ({ size, top, left }: { size: number; top: number; left: 
     <View style={{ position: 'absolute', width: size, height: size, top, left, backgroundColor: 'rgba(255, 255, 255, 0.1)', borderRadius: size / 2, opacity: 0.6 }} />
 );
 
-const TaskCard = ({ task }: any) => (
+const TaskCard = ({ task, onDelete, onEdit }: any) => (
     <View className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden mb-4">
         <LinearGradient
             colors={task.status === 'Active' ? ['#10b981', '#059669'] : ['#9CA3AF', '#6B7280']}
@@ -58,11 +60,19 @@ const TaskCard = ({ task }: any) => (
             </View>
 
             <View className="flex-row space-x-2">
-                <TouchableOpacity className="flex-1 bg-indigo-600 py-3 rounded-xl flex-row items-center justify-center">
+                <TouchableOpacity
+                    className="flex-1 bg-indigo-600 py-3 rounded-xl flex-row items-center justify-center"
+                    onPress={() => onEdit(task)}
+                    activeOpacity={0.7}
+                >
                     <Edit size={16} color="white" />
                     <Text className="text-white font-bold ml-2">Edit</Text>
                 </TouchableOpacity>
-                <TouchableOpacity className="bg-red-50 border border-red-200 px-4 py-3 rounded-xl">
+                <TouchableOpacity
+                    className="bg-red-50 border border-red-200 px-4 py-3 rounded-xl"
+                    onPress={() => onDelete(task)}
+                    activeOpacity={0.7}
+                >
                     <Trash2 size={18} color="#EF4444" />
                 </TouchableOpacity>
             </View>
@@ -78,19 +88,6 @@ export default function TasksListPage() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
-    // Auto-detect platform and use correct API URL
-    // Auto-detect platform and use correct API URL
-    const getApiUrl = () => {
-        if (Platform.OS === 'android') {
-            return 'http://192.168.1.46:5001/api';
-        }
-        if (Platform.OS === 'ios') {
-            return 'http://localhost:5001/api';
-        }
-        const baseUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5001';
-        return baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
-    };
 
     const API_URL = `${getApiUrl()}/tasks`;
 
@@ -125,6 +122,93 @@ export default function TasksListPage() {
     const onRefresh = () => {
         setRefreshing(true);
         fetchTasks();
+    };
+
+    const handleDelete = async (task: any) => {
+        const confirmDelete = async () => {
+            Alert.alert(
+                'Delete Task',
+                `Are you sure you want to delete "${task.title}"? This action cannot be undone.`,
+                [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                        text: 'Delete',
+                        style: 'destructive',
+                        onPress: async () => {
+                            try {
+                                const token = await AsyncStorage.getItem('adminToken');
+                                const response = await fetch(`${API_URL}/${task._id}`, {
+                                    method: 'DELETE',
+                                    headers: {
+                                        'Authorization': `Bearer ${token}`,
+                                    },
+                                });
+
+                                const data = await response.json();
+
+                                if (response.ok && data.success) {
+                                    // Remove from local state
+                                    setTasks(prev => prev.filter((t: any) => t._id !== task._id));
+                                    Alert.alert('Success', 'Task deleted successfully');
+                                } else {
+                                    Alert.alert('Error', data.message || 'Failed to delete task');
+                                }
+                            } catch (error) {
+                                console.error('Error deleting task:', error);
+                                Alert.alert('Error', 'Network error. Please try again.');
+                            }
+                        },
+                    },
+                ],
+                { cancelable: true }
+            );
+        };
+
+        if (Platform.OS === 'web') {
+            if (window.confirm(`Are you sure you want to delete "${task.title}"?`)) {
+                try {
+                    const token = await AsyncStorage.getItem('adminToken');
+                    const response = await fetch(`${API_URL}/${task._id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                        },
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok && data.success) {
+                        setTasks(prev => prev.filter((t: any) => t._id !== task._id));
+                        alert('Task deleted successfully');
+                    } else {
+                        alert(data.message || 'Failed to delete task');
+                    }
+                } catch (error) {
+                    console.error('Error deleting task:', error);
+                    alert('Network error. Please try again.');
+                }
+            }
+        } else {
+            confirmDelete();
+        }
+    };
+
+    const handleEdit = (task: any) => {
+        // Navigate to builder with task data
+        router.push({
+            pathname: '/(admin)/tasks/builder',
+            params: {
+                editMode: 'true',
+                taskId: task._id,
+                title: task.title,
+                description: task.description || '',
+                platform: task.platform || '',
+                points: task.points?.toString() || '10',
+                deadline: task.deadline || '',
+                target: task.targetAudience || 'All',
+                linkToShare: task.linkToShare || '',
+            }
+        } as any);
     };
 
     const filteredTasks = tasks.filter((task: any) => {
@@ -220,7 +304,11 @@ export default function TasksListPage() {
                         <View className="flex-row flex-wrap -mx-2">
                             {filteredTasks.map((task: any) => (
                                 <View key={task._id} className="w-full md:w-1/2 lg:w-1/3 p-2">
-                                    <TaskCard task={task} />
+                                    <TaskCard
+                                        task={task}
+                                        onDelete={handleDelete}
+                                        onEdit={handleEdit}
+                                    />
                                 </View>
                             ))}
                         </View>

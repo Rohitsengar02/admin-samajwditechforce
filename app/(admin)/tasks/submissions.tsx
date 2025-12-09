@@ -59,16 +59,7 @@ const SubmissionCard = ({ submission }: any) => (
                 </View>
             </View>
 
-            <View className="flex-row space-x-2">
-                <TouchableOpacity className="flex-1 bg-gray-100 py-3 rounded-xl flex-row items-center justify-center">
-                    <Eye size={16} color="#6B7280" />
-                    <Text className="text-gray-700 font-bold ml-2">View</Text>
-                </TouchableOpacity>
-                <TouchableOpacity className="flex-1 bg-emerald-600 py-3 rounded-xl flex-row items-center justify-center">
-                    <CheckCircle size={16} color="white" />
-                    <Text className="text-white font-bold ml-2">Verify</Text>
-                </TouchableOpacity>
-            </View>
+
         </View>
     </View>
 );

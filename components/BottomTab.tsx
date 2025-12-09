@@ -18,6 +18,7 @@ import {
     Settings,
     Newspaper,
     UserCheck,
+    BellRing,
     LucideIcon
 } from 'lucide-react-native';
 
@@ -45,6 +46,7 @@ const BOTTOM_TABS: MenuItem[] = [
 
 // Carousel items (remaining menu items)
 const CAROUSEL_ITEMS: MenuItem[] = [
+    { name: 'Notifications', icon: BellRing, path: '/(admin)/notifications', gradient: ['#8b5cf6', '#7c3aed'] },
     { name: 'Approvals', icon: UserCheck, path: '/(admin)/approvals', gradient: ['#10B981', '#059669'] },
     { name: 'Verifications', icon: CheckSquare, path: '/(admin)/verifications', gradient: ['#0EA5E9', '#0284C7'] },
     { name: 'Digital IDs', icon: CreditCard, path: '/(admin)/digital-id', gradient: ['#8B5CF6', '#7C3AED'] },
@@ -155,6 +157,11 @@ export default function BottomTab({ onMenuPress }: BottomTabProps) {
 
     // Hide on desktop
     if (Platform.OS === 'web' && typeof window !== 'undefined' && window.innerWidth >= 768) {
+        return null;
+    }
+
+    // Hide on builder page (mobile only)
+    if (pathname.includes('/pages/builder')) {
         return null;
     }
 

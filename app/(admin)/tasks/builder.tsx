@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Dimensions, Alert, ActivityIndicator, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Dimensions, Alert, ActivityIndicator, Platform, Modal } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import {
     ArrowLeft, Upload, Calendar, Award, Users, CheckCircle,
@@ -23,8 +23,12 @@ const PLATFORMS = [
 
 export default function TaskBuilderPage() {
     const router = useRouter();
+    const params = useLocalSearchParams();
     const [loading, setLoading] = useState(false);
     const [mediaUri, setMediaUri] = useState<string | null>(null);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [isEditMode, setIsEditMode] = useState(false);
+    const [taskId, setTaskId] = useState<string | null>(null);
     const [formData, setFormData] = useState({
         title: '',
         description: '',
@@ -35,9 +39,26 @@ export default function TaskBuilderPage() {
         linkToShare: '',
     });
 
+    // Pre-fill form if in edit mode
+    useEffect(() => {
+        if (params.editMode === 'true' && params.taskId) {
+            setIsEditMode(true);
+            setTaskId(params.taskId as string);
+            setFormData({
+                title: (params.title as string) || '',
+                description: (params.description as string) || '',
+                platform: (params.platform as string) || '',
+                points: (params.points as string) || '10',
+                deadline: (params.deadline as string) || '',
+                target: (params.target as string) || 'All',
+                linkToShare: (params.linkToShare as string) || '',
+            });
+        }
+    }, [params]);
+
     // Auto-detect platform and use correct API URL
     const getApiUrl = () => {
-        const baseUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000';
+        const baseUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000/api';
 
         // For Android emulator, localhost doesn't work - need to use 10.0.2.2
         if (Platform.OS === 'android') {
@@ -47,7 +68,8 @@ export default function TaskBuilderPage() {
         return baseUrl;
     };
 
-    const API_URL = `${getApiUrl()}/api/tasks`;
+    const apiUrl = getApiUrl();
+    const API_URL = apiUrl.endsWith('/api') ? `${apiUrl}/tasks` : `${apiUrl}/api/tasks`;
 
     const pickMedia = async () => {
         try {
@@ -100,9 +122,6 @@ export default function TaskBuilderPage() {
         setLoading(true);
 
         try {
-            // For now, using mock auth token - replace with actual auth from your auth context
-            const mockToken = 'your-jwt-token-here';
-
             const payload = {
                 title: formData.title.trim(),
                 description: formData.description.trim(),
@@ -112,16 +131,17 @@ export default function TaskBuilderPage() {
                 targetAudience: formData.target || 'All',
                 linkToShare: formData.linkToShare.trim() || '',
                 type: 'Social Media',
-                // mediaUrl would be set after upload implementation
             };
 
-            console.log('Creating task with payload:', payload);
+            console.log(isEditMode ? 'Updating task' : 'Creating task', 'with payload:', payload);
 
-            const response = await fetch(API_URL, {
-                method: 'POST',
+            const url = isEditMode ? `${API_URL}/${taskId}` : API_URL;
+            const method = isEditMode ? 'PUT' : 'POST';
+
+            const response = await fetch(url, {
+                method,
                 headers: {
                     'Content-Type': 'application/json',
-                    // 'Authorization': `Bearer ${mockToken}`, // Uncomment when auth is implemented
                 },
                 body: JSON.stringify(payload),
             });
@@ -129,16 +149,7 @@ export default function TaskBuilderPage() {
             const data = await response.json();
 
             if (response.ok && data.success) {
-                Alert.alert(
-                    'Success!',
-                    'Task created successfully',
-                    [
-                        {
-                            text: 'OK',
-                            onPress: () => router.back(),
-                        },
-                    ]
-                );
+                setShowSuccessModal(true);
             } else {
                 Alert.alert('Error', data.message || 'Failed to create task');
             }
@@ -159,8 +170,12 @@ export default function TaskBuilderPage() {
                         <ArrowLeft size={24} color="white" />
                     </TouchableOpacity>
                     <View className="flex-1">
-                        <Text className="text-white text-3xl font-bold">Task Builder</Text>
-                        <Text className="text-indigo-200 text-sm mt-1">Create new daily task</Text>
+                        <Text className="text-white text-3xl font-bold">
+                            {isEditMode ? 'Edit Task' : 'Task Builder'}
+                        </Text>
+                        <Text className="text-indigo-200 text-sm mt-1">
+                            {isEditMode ? 'Update task details' : 'Create new daily task'}
+                        </Text>
                     </View>
                 </View>
             </LinearGradient>
@@ -300,18 +315,79 @@ export default function TaskBuilderPage() {
                             {loading ? (
                                 <>
                                     <ActivityIndicator size="small" color="white" />
-                                    <Text className="text-white font-bold ml-2">Creating...</Text>
+                                    <Text className="text-white font-bold ml-2">
+                                        {isEditMode ? 'Updating...' : 'Creating...'}
+                                    </Text>
                                 </>
                             ) : (
                                 <>
                                     <CheckCircle size={20} color="white" />
-                                    <Text className="text-white font-bold ml-2">Create Task</Text>
+                                    <Text className="text-white font-bold ml-2">
+                                        {isEditMode ? 'Update Task' : 'Create Task'}
+                                    </Text>
                                 </>
                             )}
                         </LinearGradient>
                     </TouchableOpacity>
                 </View>
             </View>
+
+            {/* Success Modal */}
+            <Modal
+                visible={showSuccessModal}
+                transparent
+                animationType="fade"
+                onRequestClose={() => {
+                    setShowSuccessModal(false);
+                    router.back();
+                }}
+            >
+                <View className="flex-1 justify-center items-center bg-black/50 px-6">
+                    <View className="bg-white rounded-3xl p-8 items-center shadow-2xl w-full max-w-sm">
+                        <View className="bg-green-100 p-4 rounded-full mb-4">
+                            <CheckCircle size={48} color="#22c55e" />
+                        </View>
+
+                        <Text className="text-2xl font-bold text-gray-900 mb-2">
+                            {isEditMode ? 'Task Updated! ✨' : 'Task Created! 🎉'}
+                        </Text>
+
+                        <Text className="text-gray-600 text-center mb-6">
+                            Your task has been successfully {isEditMode ? 'updated' : 'created'} and all members will be notified instantly.
+                        </Text>
+
+                        <View className="bg-indigo-50 p-4 rounded-2xl mb-6 w-full">
+                            <View className="flex-row items-center mb-2">
+                                <View className="bg-indigo-500 p-1 rounded-full mr-2">
+                                    <CheckCircle size={16} color="white" />
+                                </View>
+                                <Text className="text-indigo-900 font-semibold">Task saved to database</Text>
+                            </View>
+                            <View className="flex-row items-center">
+                                <View className="bg-indigo-500 p-1 rounded-full mr-2">
+                                    <CheckCircle size={16} color="white" />
+                                </View>
+                                <Text className="text-indigo-900 font-semibold">Notifications sent to members</Text>
+                            </View>
+                        </View>
+
+                        <TouchableOpacity
+                            onPress={() => {
+                                setShowSuccessModal(false);
+                                router.back();
+                            }}
+                            className="w-full"
+                        >
+                            <LinearGradient
+                                colors={['#22c55e', '#16a34a']}
+                                className="py-4 rounded-2xl items-center"
+                            >
+                                <Text className="text-white font-bold text-lg">Done</Text>
+                            </LinearGradient>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </ScrollView>
     );
 }

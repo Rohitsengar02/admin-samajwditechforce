@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import {
     ArrowLeft, MapPin, User, Phone, Mail, Building2, CheckCircle
 } from 'lucide-react-native';
+import { getApiUrl } from '../../../utils/api';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -32,19 +33,6 @@ export default function AddDistrictPage() {
         headEmail: '',
         assemblies: '',
     });
-
-    // Auto-detect platform and use correct API URL
-    // Auto-detect platform and use correct API URL
-    const getApiUrl = () => {
-        if (Platform.OS === 'android') {
-            return 'http://192.168.1.46:5001/api';
-        }
-        if (Platform.OS === 'ios') {
-            return 'http://localhost:5001/api';
-        }
-        const baseUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5001';
-        return baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
-    };
 
     const API_URL = `${getApiUrl()}/districts`;
 

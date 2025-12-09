@@ -1,52 +1,137 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator, Platform, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator, Platform, RefreshControl, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useFocusEffect } from 'expo-router';
 import {
-    ArrowLeft, Users, PlayCircle, FileText, Clock, CheckCircle,
-    Plus, TrendingUp, Award
+    ArrowLeft, Trophy, PlayCircle, FileText, Clock, CheckCircle,
+    Pencil, Trash2
 } from 'lucide-react-native';
+import { getApiUrl } from '../../../utils/api';
 
 const screenWidth = Dimensions.get('window').width;
 
 const AnimatedBubble = ({ size, top, left }: { size: number; top: number; left: number }) => (
-    <View
-        style={{
-            position: 'absolute',
-            width: size,
-            height: size,
-            top, left,
-            backgroundColor: 'rgba(255, 255, 255, 0.1)',
-            borderRadius: size / 2,
-            opacity: 0.6,
-        }}
-    />
+    <View style={{ position: 'absolute', width: size, height: size, top, left, backgroundColor: 'rgba(255, 255, 255, 0.1)', borderRadius: size / 2, opacity: 0.6 }} />
 );
 
-const ModuleCard = ({ module }: any) => (
-    <View className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden mb-4">
-        <View className="p-5">
-            <View className="flex-row items-center justify-between mb-3">
-                <View className="flex-row items-center flex-1">
-                    <View className={`p-3 rounded-xl mr-3 ${module.type === 'video' ? 'bg-blue-50' : 'bg-emerald-50'}`}>
-                        {module.type === 'video' ? (
-                            <PlayCircle size={24} color="#3B82F6" />
-                        ) : (
-                            <FileText size={24} color="#10B981" />
-                        )}
-                    </View>
-                    <View className="flex-1">
-                        <Text className="text-gray-900 font-bold text-lg">{module.title}</Text>
-                        <View className="flex-row items-center mt-1">
-                            <Clock size={14} color="#9CA3AF" />
-                            <Text className="text-gray-500 text-sm ml-1">{module.duration || 'N/A'}</Text>
-                        </View>
-                    </View>
-                </View>
-            </View>
+const API_URL = `${getApiUrl()}/training`;
 
-            <TouchableOpacity className="bg-emerald-600 py-3 rounded-xl items-center">
-                <Text className="text-white font-bold">Start Learning</Text>
+interface ModuleCardProps {
+    module: any;
+    onEdit: () => void;
+    onDelete: () => void;
+}
+
+const ModuleCard = ({ module, onEdit, onDelete }: ModuleCardProps) => (
+    <View style={{
+        backgroundColor: 'white',
+        borderRadius: 24,
+        padding: 20,
+        marginBottom: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+        elevation: 5,
+        borderWidth: 1,
+        borderColor: '#f3f4f6',
+    }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+            <LinearGradient
+                colors={module.type === 'video' ? ['#EF4444', '#DC2626'] : ['#7C3AED', '#6D28D9']}
+                style={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: 16,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginRight: 14,
+                }}
+            >
+                {module.type === 'video' ? (
+                    <PlayCircle size={28} color="white" />
+                ) : (
+                    <FileText size={28} color="white" />
+                )}
+            </LinearGradient>
+            <View style={{ flex: 1 }}>
+                <View style={{
+                    backgroundColor: module.type === 'video' ? '#fee2e2' : '#ede9fe',
+                    paddingHorizontal: 10,
+                    paddingVertical: 4,
+                    borderRadius: 8,
+                    alignSelf: 'flex-start',
+                    marginBottom: 6,
+                }}>
+                    <Text style={{
+                        fontSize: 11,
+                        fontWeight: '700',
+                        color: module.type === 'video' ? '#dc2626' : '#7c3aed',
+                        textTransform: 'uppercase',
+                    }}>
+                        {module.type}
+                    </Text>
+                </View>
+                <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#111827' }} numberOfLines={2}>
+                    {module.title}
+                </Text>
+            </View>
+        </View>
+
+        {module.description && (
+            <Text style={{ fontSize: 14, color: '#6b7280', marginBottom: 16, lineHeight: 20 }} numberOfLines={2}>
+                {module.description}
+            </Text>
+        )}
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+            {module.duration && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 16 }}>
+                    <Clock size={16} color="#9CA3AF" />
+                    <Text style={{ fontSize: 13, color: '#6b7280', marginLeft: 6, fontWeight: '500' }}>{module.duration}</Text>
+                </View>
+            )}
+            <View style={{
+                backgroundColor: '#fee2e2',
+                paddingHorizontal: 10,
+                paddingVertical: 4,
+                borderRadius: 8,
+            }}>
+                <Text style={{ fontSize: 12, fontWeight: '600', color: '#dc2626' }}>{module.phase}</Text>
+            </View>
+        </View>
+
+        <View style={{ flexDirection: 'row', gap: 12 }}>
+            <TouchableOpacity
+                onPress={onEdit}
+                style={{
+                    flex: 1,
+                    backgroundColor: '#ede9fe',
+                    paddingVertical: 14,
+                    borderRadius: 14,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                }}
+            >
+                <Pencil size={18} color="#7c3aed" />
+                <Text style={{ color: '#7c3aed', fontWeight: '700', fontSize: 14, marginLeft: 8 }}>Edit</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+                onPress={onDelete}
+                style={{
+                    flex: 1,
+                    backgroundColor: '#fef2f2',
+                    paddingVertical: 14,
+                    borderRadius: 14,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                }}
+            >
+                <Trash2 size={18} color="#DC2626" />
+                <Text style={{ color: '#DC2626', fontWeight: '700', fontSize: 14, marginLeft: 8 }}>Delete</Text>
             </TouchableOpacity>
         </View>
     </View>
@@ -58,27 +143,13 @@ export default function Phase4Page() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
-    // Auto-detect platform and use correct API URL
-    const getApiUrl = () => {
-        if (Platform.OS === 'android') {
-            return 'http://192.168.1.46:5001/api';
-        }
-        if (Platform.OS === 'ios') {
-            return 'http://localhost:5001/api';
-        }
-        const baseUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5001';
-        return baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
-    };
-
-    const API_URL = `${getApiUrl()}/training`;
-
     const fetchModules = async () => {
         try {
             const response = await fetch(API_URL);
             const data = await response.json();
             if (Array.isArray(data)) {
-                const phaseModules = data.filter((m: any) => m.phase === 'Phase 4');
-                setModules(phaseModules);
+                const phase4Modules = data.filter((m: any) => m.phase === 'Phase 4');
+                setModules(phase4Modules);
             }
         } catch (error) {
             console.error('Error fetching modules:', error);
@@ -99,76 +170,147 @@ export default function Phase4Page() {
         fetchModules();
     };
 
+    const handleEdit = (moduleId: string) => {
+        router.push(`/(admin)/training/editor?id=${moduleId}` as any);
+    };
+
+    const handleDelete = async (moduleId: string, title: string) => {
+        const confirmDelete = () => {
+            return new Promise<boolean>((resolve) => {
+                if (Platform.OS === 'web') {
+                    resolve(window.confirm(`Delete "${title}"?\n\nThis action cannot be undone.`));
+                } else {
+                    Alert.alert(
+                        '⚠️ Delete Module',
+                        `Are you sure you want to delete "${title}"?`,
+                        [
+                            { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+                            { text: 'Delete', style: 'destructive', onPress: () => resolve(true) }
+                        ]
+                    );
+                }
+            });
+        };
+
+        const confirmed = await confirmDelete();
+        if (!confirmed) return;
+
+        try {
+            const response = await fetch(`${API_URL}/${moduleId}`, {
+                method: 'DELETE',
+            });
+
+            if (response.ok) {
+                if (Platform.OS === 'web') {
+                    alert('✅ Module deleted successfully');
+                } else {
+                    Alert.alert('Success', 'Module deleted successfully');
+                }
+                fetchModules();
+            } else {
+                throw new Error('Delete failed');
+            }
+        } catch (error) {
+            console.error('Delete error:', error);
+            if (Platform.OS === 'web') {
+                alert('❌ Failed to delete module');
+            } else {
+                Alert.alert('Error', 'Failed to delete module');
+            }
+        }
+    };
+
     return (
         <ScrollView
-            className="flex-1 bg-gray-50"
+            style={{ flex: 1, backgroundColor: '#f9fafb' }}
             showsVerticalScrollIndicator={false}
             refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#10B981']} />
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#EF4444']} />
             }
         >
-            <View className="relative overflow-hidden mb-6">
-                <LinearGradient colors={['#10B981', '#059669']} className="pt-12 pb-16 px-6 rounded-b-[40px]">
+            <View style={{ position: 'relative', overflow: 'hidden', marginBottom: 24 }}>
+                <LinearGradient
+                    colors={['#EF4444', '#DC2626']}
+                    style={{
+                        paddingTop: 48,
+                        paddingBottom: 64,
+                        paddingHorizontal: 24,
+                        borderBottomLeftRadius: 40,
+                        borderBottomRightRadius: 40,
+                    }}
+                >
                     <AnimatedBubble size={120} top={-30} left={screenWidth - 100} />
                     <AnimatedBubble size={80} top={80} left={20} />
 
-                    <View className="flex-row items-center mb-6">
-                        <TouchableOpacity onPress={() => router.back()} className="bg-white/20 p-2 rounded-xl mr-4">
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 24 }}>
+                        <TouchableOpacity
+                            onPress={() => router.back()}
+                            style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: 10, borderRadius: 14, marginRight: 16 }}
+                        >
                             <ArrowLeft size={24} color="white" />
                         </TouchableOpacity>
-                        <View className="flex-1">
-                            <Text className="text-emerald-100 text-sm mb-1">Phase 4</Text>
-                            <Text className="text-white text-3xl font-bold">Conclusion</Text>
-                            <Text className="text-emerald-100 text-sm mt-1">Final victory push</Text>
+                        <View style={{ flex: 1 }}>
+                            <Text style={{ color: '#fecaca', fontSize: 14, marginBottom: 4 }}>Phase 4</Text>
+                            <Text style={{ color: 'white', fontSize: 28, fontWeight: 'bold' }}>Lead</Text>
+                            <Text style={{ color: '#fecaca', fontSize: 14, marginTop: 4 }}>Become a leader</Text>
                         </View>
-                        <View className="bg-white/20 p-3 rounded-2xl">
-                            <CheckCircle size={28} color="white" />
+                        <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: 14, borderRadius: 18 }}>
+                            <Trophy size={28} color="white" />
                         </View>
                     </View>
 
-                    <View className="bg-white/20 backdrop-blur-md rounded-2xl p-4">
-                        <View className="flex-row items-center justify-between mb-2">
-                            <Text className="text-white/80 text-sm">Overall Progress</Text>
-                            <Text className="text-white font-bold">0%</Text>
+                    <View style={{ backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 18, padding: 18 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                            <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14 }}>Total Modules</Text>
+                            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 18 }}>{modules.length}</Text>
                         </View>
-                        <View className="bg-white/20 rounded-full h-3">
-                            <View className="bg-white rounded-full h-3" style={{ width: '0%' }} />
-                        </View>
-                        <View className="flex-row items-center mt-2">
-                            <Text className="text-white/80 text-xs">0 of {modules.length} modules completed</Text>
+                        <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 10, height: 10 }}>
+                            <View style={{ backgroundColor: 'white', borderRadius: 10, height: 10, width: '0%' }} />
                         </View>
                     </View>
                 </LinearGradient>
             </View>
 
-            <View className="px-4">
-                <View className="flex-row mb-6 space-x-3">
-                    <View className="flex-1 bg-white rounded-2xl p-4 shadow-sm">
-                        <View className="bg-emerald-50 p-2 rounded-lg mb-2 self-start">
-                            <FileText size={20} color="#10B981" />
+            <View style={{ paddingHorizontal: 16, paddingBottom: 100 }}>
+                <View style={{ flexDirection: 'row', marginBottom: 24, gap: 12 }}>
+                    <View style={{ flex: 1, backgroundColor: 'white', borderRadius: 20, padding: 18, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}>
+                        <View style={{ backgroundColor: '#fee2e2', padding: 10, borderRadius: 12, alignSelf: 'flex-start', marginBottom: 10 }}>
+                            <FileText size={22} color="#EF4444" />
                         </View>
-                        <Text className="text-2xl font-bold text-gray-900">{modules.length}</Text>
-                        <Text className="text-gray-500 text-sm">Total Modules</Text>
+                        <Text style={{ fontSize: 26, fontWeight: 'bold', color: '#111827' }}>{modules.length}</Text>
+                        <Text style={{ fontSize: 13, color: '#6b7280', fontWeight: '500' }}>Total Modules</Text>
                     </View>
 
-                    <View className="flex-1 bg-white rounded-2xl p-4 shadow-sm">
-                        <View className="bg-emerald-50 p-2 rounded-lg mb-2 self-start">
-                            <CheckCircle size={20} color="#10B981" />
+                    <View style={{ flex: 1, backgroundColor: 'white', borderRadius: 20, padding: 18, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}>
+                        <View style={{ backgroundColor: '#fecaca', padding: 10, borderRadius: 12, alignSelf: 'flex-start', marginBottom: 10 }}>
+                            <CheckCircle size={22} color="#dc2626" />
                         </View>
-                        <Text className="text-2xl font-bold text-gray-900">0</Text>
-                        <Text className="text-gray-500 text-sm">Completed</Text>
+                        <Text style={{ fontSize: 26, fontWeight: 'bold', color: '#111827' }}>0</Text>
+                        <Text style={{ fontSize: 13, color: '#6b7280', fontWeight: '500' }}>Completed</Text>
                     </View>
                 </View>
 
-                <View className="mb-6">
-                    <Text className="text-lg font-bold text-gray-800 mb-4 px-2">Training Modules</Text>
+                <View style={{ marginBottom: 24 }}>
+                    <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#111827', marginBottom: 16 }}>
+                        📚 Training Modules
+                    </Text>
                     {loading && !refreshing ? (
-                        <ActivityIndicator size="large" color="#10B981" />
+                        <View style={{ padding: 40, alignItems: 'center' }}>
+                            <ActivityIndicator size="large" color="#EF4444" />
+                        </View>
                     ) : modules.length === 0 ? (
-                        <Text className="text-gray-400 text-center py-4">No modules found for Phase 4</Text>
+                        <View style={{ backgroundColor: 'white', padding: 40, borderRadius: 20, alignItems: 'center' }}>
+                            <FileText size={48} color="#d1d5db" />
+                            <Text style={{ color: '#6b7280', fontSize: 16, marginTop: 16, fontWeight: '500' }}>No modules found for Phase 4</Text>
+                        </View>
                     ) : (
                         modules.map(module => (
-                            <ModuleCard key={module._id} module={module} />
+                            <ModuleCard
+                                key={module._id}
+                                module={module}
+                                onEdit={() => handleEdit(module._id)}
+                                onDelete={() => handleDelete(module._id, module.title)}
+                            />
                         ))
                     )}
                 </View>

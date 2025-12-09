@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, RefreshControl, TouchableOpacity, Alert, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
@@ -47,6 +47,122 @@ export default function MasterAdminDashboard() {
         fetchAdmins();
     }, []);
 
+    const deleteAdmin = async (adminId: string, adminName: string) => {
+        console.log('Delete admin clicked:', adminId, adminName);
+
+        // Use native confirm on web, Alert on mobile
+        if (Platform.OS === 'web') {
+            const confirmed = window.confirm(
+                `Are you sure you want to delete "${adminName}"?\n\nThis action cannot be undone.`
+            );
+
+            if (!confirmed) {
+                console.log('Delete cancelled');
+                return;
+            }
+        } else {
+            // Mobile - use Alert
+            Alert.alert(
+                '⚠️ Delete Admin',
+                `Are you sure you want to delete "${adminName}"?\n\nThis action cannot be undone.`,
+                [
+                    {
+                        text: 'Cancel',
+                        style: 'cancel',
+                        onPress: () => console.log('Delete cancelled'),
+                    },
+                    {
+                        text: 'Delete',
+                        style: 'destructive',
+                        onPress: () => performDelete(adminId, adminName),
+                    },
+                ]
+            );
+            return; // Alert is async, so we return here
+        }
+
+        // For web, execute immediately after confirm
+        await performDelete(adminId, adminName);
+    };
+
+    const performDelete = async (adminId: string, adminName: string) => {
+        try {
+            console.log('Starting delete for:', adminId);
+            const token = await AsyncStorage.getItem('adminToken');
+
+            if (!token) {
+                const errorMsg = 'Not authenticated';
+                console.error(errorMsg);
+                if (Platform.OS === 'web') {
+                    alert('❌ Error: ' + errorMsg);
+                } else {
+                    Alert.alert('❌ Error', errorMsg);
+                }
+                return;
+            }
+
+            console.log('Making DELETE request to:', `${API_URL}/admin/delete/${adminId}`);
+
+            const response = await fetch(`${API_URL}/admin/delete/${adminId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            console.log('Response status:', response.status);
+            console.log('Response ok:', response.ok);
+
+            // Check if response is ok before parsing
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Delete successful:', data);
+                const successMsg = data.message || 'Admin deleted successfully';
+
+                if (Platform.OS === 'web') {
+                    alert('✅ Success: ' + successMsg);
+                } else {
+                    Alert.alert('✅ Success', successMsg);
+                }
+
+                fetchAdmins(); // Refresh the list
+            } else {
+                // Try to parse error message
+                try {
+                    const errorData = await response.json();
+                    console.error('Delete failed:', errorData);
+                    const errorMsg = errorData.message || 'Failed to delete admin';
+
+                    if (Platform.OS === 'web') {
+                        alert('❌ Error: ' + errorMsg);
+                    } else {
+                        Alert.alert('❌ Error', errorMsg);
+                    }
+                } catch (parseError) {
+                    // If JSON parsing fails, show status
+                    console.error('Parse error:', parseError);
+                    const errorMsg = `Failed to delete admin (Status: ${response.status})`;
+
+                    if (Platform.OS === 'web') {
+                        alert('❌ Error: ' + errorMsg);
+                    } else {
+                        Alert.alert('❌ Error', errorMsg);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error deleting admin:', error);
+            const errorMsg = 'Network error. Please check your connection.';
+
+            if (Platform.OS === 'web') {
+                alert('❌ Error: ' + errorMsg);
+            } else {
+                Alert.alert('❌ Error', errorMsg);
+            }
+        }
+    };
+
     const renderItem = ({ item }: { item: AdminUser }) => (
         <View style={styles.card}>
             <View style={styles.cardHeader}>
@@ -68,6 +184,15 @@ export default function MasterAdminDashboard() {
                     <MaterialCommunityIcons name="phone-outline" size={16} color="#666" />
                     <Text style={styles.infoText}>{item.phone}</Text>
                 </View>
+
+                {/* Delete Button */}
+                <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={() => deleteAdmin(item._id, item.name)}
+                >
+                    <MaterialCommunityIcons name="delete-outline" size={20} color="#fff" />
+                    <Text style={styles.deleteButtonText}>Delete Admin</Text>
+                </TouchableOpacity>
             </View>
         </View>
     );
@@ -117,6 +242,7 @@ export default function MasterAdminDashboard() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        paddingBottom: 100,
         backgroundColor: '#f8fafc',
     },
     header: {
@@ -245,5 +371,20 @@ const styles = StyleSheet.create({
         marginTop: 10,
         color: '#94a3b8',
         fontSize: 16,
+    },
+    deleteButton: {
+        backgroundColor: '#dc2626',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 12,
+        borderRadius: 10,
+        marginTop: 12,
+        gap: 8,
+    },
+    deleteButtonText: {
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: '600',
     },
 });

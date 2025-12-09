@@ -78,13 +78,7 @@ export default function CommunicationPage() {
                 <View className="mb-6">
                     <Text className="text-lg font-bold text-gray-800 mb-4 px-2">Communication Tools</Text>
                     <View className="flex-row flex-wrap -mx-2">
-                        <QuickActionCard
-                            icon={Bell}
-                            title="Announcements"
-                            description="Post updates & news"
-                            color="bg-indigo-600"
-                            onPress={() => router.push('/(admin)/communication/announcements' as any)}
-                        />
+
                         <QuickActionCard
                             icon={Send}
                             title="Push Notifications"
@@ -93,31 +87,7 @@ export default function CommunicationPage() {
                             onPress={() => router.push('/(admin)/communication/notifications' as any)}
                         />
                     </View>
-                    <View className="flex-row flex-wrap -mx-2">
-                        <QuickActionCard
-                            icon={MessageSquare}
-                            title="Discussions"
-                            description="Moderate conversations"
-                            color="bg-amber-600"
-                            onPress={() => router.push('/(admin)/communication/discussions' as any)}
-                        />
-                        <QuickActionCard
-                            icon={HelpCircle}
-                            title="Ask Leader"
-                            description="Review questions"
-                            color="bg-purple-600"
-                            onPress={() => router.push('/(admin)/communication/questions' as any)}
-                        />
-                    </View>
-                    <View className="flex-row flex-wrap -mx-2">
-                        <QuickActionCard
-                            icon={Lightbulb}
-                            title="Suggestion Box"
-                            description="Review ideas"
-                            color="bg-blue-600"
-                            onPress={() => router.push('/(admin)/communication/suggestions' as any)}
-                        />
-                    </View>
+
                 </View>
             </View>
         </ScrollView>

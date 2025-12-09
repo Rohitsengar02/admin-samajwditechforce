@@ -7,9 +7,9 @@ import * as ImagePicker from 'expo-image-picker';
 
 const getApiUrl = () => {
     if (Platform.OS === 'android') {
-        return 'http://192.168.1.39:5000/api';
+        return 'http://192.168.1.46:5001/api';
     }
-    let url = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000';
+    let url = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5001';
     if (!url.endsWith('/api')) {
         url += '/api';
     }
@@ -29,6 +29,7 @@ export default function OnboardingEditor() {
     const [image, setImage] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [showSuccess, setShowSuccess] = useState(false);
 
     useEffect(() => {
         if (isEditing) {
@@ -119,9 +120,12 @@ export default function OnboardingEditor() {
             const data = await response.json();
 
             if (data.success) {
-                Alert.alert('Success', 'Slide saved successfully', [
-                    { text: 'OK', onPress: () => router.back() }
-                ]);
+                setShowSuccess(true);
+                // Auto close after 2 seconds and navigate back
+                setTimeout(() => {
+                    setShowSuccess(false);
+                    router.back();
+                }, 2000);
             } else {
                 Alert.alert('Error', data.error || 'Failed to save slide');
             }
@@ -142,81 +146,135 @@ export default function OnboardingEditor() {
     }
 
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <ArrowLeft size={24} color="#1e293b" />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>{isEditing ? 'Edit Slide' : 'New Slide'}</Text>
-                <TouchableOpacity
-                    onPress={handleSave}
-                    style={[styles.saveButton, saving && styles.disabledButton]}
-                    disabled={saving}
-                >
-                    {saving ? (
-                        <ActivityIndicator color="#fff" size="small" />
-                    ) : (
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                            <Save size={18} color="#fff" />
-                            <Text style={styles.saveButtonText}>Save</Text>
+        <>
+            {/* Success Modal */}
+            {showSuccess && (
+                <View style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.5)',
+                    zIndex: 9999,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                }}>
+                    <View style={{
+                        backgroundColor: 'white',
+                        borderRadius: 24,
+                        padding: 32,
+                        alignItems: 'center',
+                        margin: 20,
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 10 },
+                        shadowOpacity: 0.3,
+                        shadowRadius: 20,
+                        elevation: 10,
+                        minWidth: 280,
+                    }}>
+                        <View style={{
+                            width: 80,
+                            height: 80,
+                            borderRadius: 40,
+                            backgroundColor: isEditing ? '#fce7f3' : '#dcfce7',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            marginBottom: 20,
+                        }}>
+                            <Save size={48} color={isEditing ? '#E30512' : '#16a34a'} />
                         </View>
-                    )}
-                </TouchableOpacity>
-            </View>
-
-            <ScrollView contentContainerStyle={styles.content}>
-                <View style={styles.formGroup}>
-                    <Text style={styles.label}>Title</Text>
-                    <TextInput
-                        style={styles.input}
-                        value={title}
-                        onChangeText={setTitle}
-                        placeholder="Enter slide title"
-                    />
+                        <Text style={{
+                            fontSize: 24,
+                            fontWeight: 'bold',
+                            color: '#111827',
+                            marginBottom: 8,
+                        }}>{isEditing ? 'Updated!' : 'Created!'}</Text>
+                        <Text style={{
+                            fontSize: 16,
+                            color: '#6b7280',
+                            textAlign: 'center',
+                        }}>Onboarding slide {isEditing ? 'updated' : 'created'} successfully</Text>
+                    </View>
                 </View>
+            )}
 
-                <View style={styles.formGroup}>
-                    <Text style={styles.label}>Description</Text>
-                    <TextInput
-                        style={[styles.input, styles.textArea]}
-                        value={description}
-                        onChangeText={setDescription}
-                        placeholder="Enter slide description"
-                        multiline
-                        numberOfLines={4}
-                    />
-                </View>
-
-                <View style={styles.formGroup}>
-                    <Text style={styles.label}>Order (Position)</Text>
-                    <TextInput
-                        style={styles.input}
-                        value={order}
-                        onChangeText={setOrder}
-                        placeholder="0"
-                        keyboardType="numeric"
-                    />
-                    <Text style={styles.helperText}>Lower numbers appear first. Position 2 (Order 1) is reserved for the Carousel.</Text>
-                </View>
-
-                <View style={styles.formGroup}>
-                    <Text style={styles.label}>Image</Text>
-                    <TouchableOpacity onPress={pickImage} style={styles.imagePicker}>
-                        {image ? (
-                            <Image source={{ uri: image }} style={styles.previewImage} resizeMode="cover" />
+            <View style={styles.container}>
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                        <ArrowLeft size={24} color="#1e293b" />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>{isEditing ? 'Edit Slide' : 'New Slide'}</Text>
+                    <TouchableOpacity
+                        onPress={handleSave}
+                        style={[styles.saveButton, saving && styles.disabledButton]}
+                        disabled={saving}
+                    >
+                        {saving ? (
+                            <ActivityIndicator color="#fff" size="small" />
                         ) : (
-                            <View style={styles.placeholder}>
-                                <ImageIcon size={40} color="#94a3b8" />
-                                <Text style={styles.placeholderText}>Tap to select image</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                <Save size={18} color="#fff" />
+                                <Text style={styles.saveButtonText}>Save</Text>
                             </View>
                         )}
-                        <View style={styles.uploadIcon}>
-                            <Upload size={16} color="#fff" />
-                        </View>
                     </TouchableOpacity>
                 </View>
-            </ScrollView>
-        </View>
+
+                <ScrollView contentContainerStyle={styles.content}>
+                    <View style={styles.formGroup}>
+                        <Text style={styles.label}>Title</Text>
+                        <TextInput
+                            style={styles.input}
+                            value={title}
+                            onChangeText={setTitle}
+                            placeholder="Enter slide title"
+                        />
+                    </View>
+
+                    <View style={styles.formGroup}>
+                        <Text style={styles.label}>Description</Text>
+                        <TextInput
+                            style={[styles.input, styles.textArea]}
+                            value={description}
+                            onChangeText={setDescription}
+                            placeholder="Enter slide description"
+                            multiline
+                            numberOfLines={4}
+                        />
+                    </View>
+
+                    <View style={styles.formGroup}>
+                        <Text style={styles.label}>Order (Position)</Text>
+                        <TextInput
+                            style={styles.input}
+                            value={order}
+                            onChangeText={setOrder}
+                            placeholder="0"
+                            keyboardType="numeric"
+                        />
+                        <Text style={styles.helperText}>Lower numbers appear first. Position 2 (Order 1) is reserved for the Carousel.</Text>
+                    </View>
+
+                    <View style={styles.formGroup}>
+                        <Text style={styles.label}>Image</Text>
+                        <TouchableOpacity onPress={pickImage} style={styles.imagePicker}>
+                            {image ? (
+                                <Image source={{ uri: image }} style={styles.previewImage} resizeMode="cover" />
+                            ) : (
+                                <View style={styles.placeholder}>
+                                    <ImageIcon size={40} color="#94a3b8" />
+                                    <Text style={styles.placeholderText}>Tap to select image</Text>
+                                </View>
+                            )}
+                            <View style={styles.uploadIcon}>
+                                <Upload size={16} color="#fff" />
+                            </View>
+                        </TouchableOpacity>
+                    </View>
+                </ScrollView>
+            </View>
+        </>
     );
 }
 

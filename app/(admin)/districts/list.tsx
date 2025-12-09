@@ -1,11 +1,12 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Dimensions, ActivityIndicator, Platform, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Dimensions, ActivityIndicator, Platform, RefreshControl, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useFocusEffect } from 'expo-router';
 import {
     ArrowLeft, MapPin, Users, Building2, Edit, Trash2,
     Search, Filter, Plus, TrendingUp, AlertCircle
 } from 'lucide-react-native';
+import { getApiUrl } from '../../../utils/api';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -94,18 +95,6 @@ export default function DistrictListPage() {
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Auto-detect platform and use correct API URL
-    const getApiUrl = () => {
-        if (Platform.OS === 'android') {
-            return 'http://192.168.1.46:5001/api';
-        }
-        if (Platform.OS === 'ios') {
-            return 'http://localhost:5001/api';
-        }
-        const baseUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5001';
-        return baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
-    };
-
     const API_URL = `${getApiUrl()}/districts`;
 
     const fetchDistricts = async () => {
@@ -119,7 +108,6 @@ export default function DistrictListPage() {
             } else if (data.success && Array.isArray(data.data)) {
                 setDistricts(data.data);
             } else {
-                // Fallback if data structure is different or empty
                 setDistricts([]);
             }
         } catch (err) {
@@ -128,6 +116,62 @@ export default function DistrictListPage() {
         } finally {
             setLoading(false);
             setRefreshing(false);
+        }
+    };
+
+    const deleteDistrict = async (district: any) => {
+        const confirmDelete = () => {
+            return new Promise<boolean>((resolve) => {
+                if (Platform.OS === 'web') {
+                    resolve(window.confirm(`Are you sure you want to delete "${district.name}"?\n\nThis action cannot be undone.`));
+                } else {
+                    Alert.alert(
+                        '⚠️ Delete District',
+                        `Are you sure you want to delete "${district.name}"?\n\nThis action cannot be undone.`,
+                        [
+                            { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+                            { text: 'Delete', style: 'destructive', onPress: () => resolve(true) }
+                        ]
+                    );
+                }
+            });
+        };
+
+        const confirmed = await confirmDelete();
+        if (!confirmed) return;
+
+        try {
+            const response = await fetch(`${API_URL}/${district._id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const successMsg = 'District deleted successfully';
+                if (Platform.OS === 'web') {
+                    alert('✅ ' + successMsg);
+                } else {
+                    Alert.alert('✅ Success', successMsg);
+                }
+                fetchDistricts();
+            } else {
+                const errorMsg = 'Failed to delete district';
+                if (Platform.OS === 'web') {
+                    alert('❌ ' + errorMsg);
+                } else {
+                    Alert.alert('❌ Error', errorMsg);
+                }
+            }
+        } catch (error) {
+            console.error('Error deleting district:', error);
+            const errorMsg = 'Network error. Please try again.';
+            if (Platform.OS === 'web') {
+                alert('❌ ' + errorMsg);
+            } else {
+                Alert.alert('❌ Error', errorMsg);
+            }
         }
     };
 
@@ -217,7 +261,7 @@ export default function DistrictListPage() {
                                 <DistrictListCard
                                     district={district}
                                     onEdit={(d: any) => router.push(`/(admin)/districts/edit/${d._id}` as any)}
-                                    onDelete={(d: any) => console.log('Delete:', d)}
+                                    onDelete={deleteDistrict}
                                 />
                             </View>
                         ))}

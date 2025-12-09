@@ -1,368 +1,441 @@
-import React from 'react';
-import { View, Text, ScrollView, Image, Dimensions, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, Image, Dimensions, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { LineChart } from 'react-native-chart-kit';
+import { useRouter } from 'expo-router';
 import {
-    Users, CheckSquare, Map, AlertTriangle, CheckCircle, WifiOff,
-    TrendingUp, Award, Calendar, Bell, ChevronRight, Activity, Shield,
-    UserPlus, FileText, Clock, Star, Settings
+    Map, TrendingUp, ChevronRight, Activity, CheckCircle,
+    Settings, Image as ImageIcon, Newspaper, MapPin, FileText
 } from 'lucide-react-native';
+import { getApiUrl } from '../../../utils/api';
 
 const screenWidth = Dimensions.get('window').width;
 
-const chartConfig = {
-    backgroundGradientFrom: "#ffffff",
-    backgroundGradientTo: "#ffffff",
-    color: (opacity = 1) => `rgba(79, 70, 229, ${opacity})`,
-    strokeWidth: 3,
-    barPercentage: 0.7,
-    useShadowColorFromDataset: false,
-    decimalPlaces: 0,
-    propsForBackgroundLines: {
-        strokeDasharray: "",
-        stroke: "#E5E7EB"
-    }
-};
+const API_URL = getApiUrl();
 
 const AnimatedBubble = ({ size, top, left }: { size: number; top: number; left: number }) => (
-    <View
-        style={{
-            position: 'absolute',
-            width: size,
-            height: size,
-            top: top,
-            left: left,
-            backgroundColor: 'rgba(255, 255, 255, 0.1)',
-            borderRadius: size / 2,
-            opacity: 0.6,
-        }}
-    />
+    <View style={{ position: 'absolute', width: size, height: size, top, left, backgroundColor: 'rgba(255, 255, 255, 0.1)', borderRadius: size / 2, opacity: 0.6 }} />
 );
 
 interface StatsCardProps {
     title: string;
-    value: string;
-    change: string;
+    value: string | number;
+    change?: string;
     icon: any;
     gradient: [string, string];
+    onPress?: () => void;
 }
 
-const StatsCard = ({ title, value, change, icon: Icon, gradient }: StatsCardProps) => (
-    <LinearGradient
-        colors={gradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        className="p-5 rounded-3xl h-40 justify-between shadow-lg relative overflow-hidden mx-2"
-    >
-        <AnimatedBubble size={80} top={-30} left={-20} />
-        <AnimatedBubble size={60} top={60} left={120} />
-
-        <View className="flex-row justify-between items-start">
-            <View className="bg-white/20 p-3 rounded-2xl">
-                <Icon size={24} color="white" />
+const StatsCard = ({ title, value, change, icon: Icon, gradient, onPress }: StatsCardProps) => (
+    <TouchableOpacity onPress={onPress} activeOpacity={0.8} style={{ flex: 1, minWidth: 150 }}>
+        <LinearGradient
+            colors={gradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{
+                padding: 16,
+                borderRadius: 20,
+                height: 120,
+                justifyContent: 'space-between',
+                margin: 6,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.2,
+                shadowRadius: 8,
+                elevation: 6,
+                overflow: 'hidden',
+            }}
+        >
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: 10, borderRadius: 12 }}>
+                    <Icon size={20} color="white" />
+                </View>
+                {change && (
+                    <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12 }}>
+                        <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 10 }}>{change}</Text>
+                    </View>
+                )}
             </View>
-            <View className="bg-white/20 px-3 py-1 rounded-full">
-                <Text className="text-white font-bold text-xs">{change}</Text>
+            <View>
+                <Text style={{ color: 'rgba(255,255,255,0.9)', fontWeight: '500', fontSize: 12 }}>{title}</Text>
+                <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 22 }}>{value}</Text>
             </View>
-        </View>
-
-        <View>
-            <Text className="text-white/90 font-medium text-sm mb-1">{title}</Text>
-            <Text className="text-white font-bold text-3xl">{value}</Text>
-        </View>
-    </LinearGradient>
-);
-
-const QuickActionButton = ({ icon: Icon, label, color }: { icon: any; label: string; color: string }) => (
-    <TouchableOpacity className="items-center p-3">
-        <View className={`w-16 h-16 rounded-2xl items-center justify-center mb-2 ${color}`}>
-            <Icon size={28} color="#4F46E5" />
-        </View>
-        <Text className="text-gray-700 font-medium text-xs text-center">{label}</Text>
+        </LinearGradient>
     </TouchableOpacity>
 );
 
-const MetricCard = ({ label, value, icon: Icon, bgColor, iconColor }: any) => (
-    <View className="flex-1 min-w-[120px] m-1">
-        <View className={`${bgColor} p-4 rounded-2xl border border-gray-100`}>
-            <View className="flex-row items-center justify-between mb-2">
-                <Icon size={20} color={iconColor} />
-                <Text className="text-xs text-gray-500 font-medium">{label}</Text>
-            </View>
-            <Text className="text-2xl font-bold text-gray-900">{value}</Text>
+const QuickActionButton = ({ icon: Icon, label, color, onPress }: any) => (
+    <TouchableOpacity style={{ alignItems: 'center', padding: 10, flex: 1 }} onPress={onPress}>
+        <View style={{
+            width: 56,
+            height: 56,
+            borderRadius: 16,
+            backgroundColor: color,
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: 6,
+        }}>
+            <Icon size={24} color="#4F46E5" />
+        </View>
+        <Text style={{ color: '#374151', fontWeight: '500', fontSize: 11, textAlign: 'center' }}>{label}</Text>
+    </TouchableOpacity>
+);
+
+// Poster Card Component - LARGER SIZE
+const PosterCard = ({ poster, size = 'normal' }: { poster: any; size?: 'normal' | 'small' }) => (
+    <View style={{
+        width: size === 'small' ? 220 : (screenWidth - 60),
+        marginRight: 16,
+        backgroundColor: 'white',
+        borderRadius: 20,
+        overflow: 'hidden',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.12,
+        shadowRadius: 8,
+        elevation: 5,
+        marginBottom: 14,
+    }}>
+        <Image source={{ uri: poster.imageUrl }} style={{ width: '100%', height: size === 'small' ? 160 : 200 }} resizeMode="cover" />
+        <View style={{ padding: 16 }}>
+            <Text style={{ fontWeight: 'bold', fontSize: 16, color: '#111827' }} numberOfLines={2}>{poster.title}</Text>
+            <Text style={{ fontSize: 13, color: '#6b7280', marginTop: 6 }}>⬇️ {poster.downloadCount} downloads</Text>
         </View>
     </View>
 );
 
-const ActivityItem = ({ title, time, icon: Icon, color, bg }: any) => (
-    <View className="flex-row items-center p-3 mb-2 bg-white rounded-xl">
-        <View className={`p-2.5 rounded-full mr-3 ${bg}`}>
-            <Icon size={16} color={color} />
-        </View>
-        <View className="flex-1">
-            <Text className="text-gray-800 font-semibold text-sm">{title}</Text>
-            <Text className="text-gray-400 text-xs">{time}</Text>
+// News Card Component - LARGER SIZE
+const NewsCard = ({ news, size = 'normal' }: { news: any; size?: 'normal' | 'small' }) => (
+    <View style={{
+        width: size === 'small' ? 300 : 'auto',
+        backgroundColor: 'white',
+        padding: 16,
+        borderRadius: 20,
+        marginRight: size === 'small' ? 16 : 0,
+        marginBottom: size === 'normal' ? 14 : 0,
+        flexDirection: size === 'normal' ? 'row' : 'column',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 4,
+    }}>
+        {news.coverImage && (
+            <Image
+                source={{ uri: news.coverImage }}
+                style={{
+                    width: size === 'small' ? '100%' : 90,
+                    height: size === 'small' ? 160 : 90,
+                    borderRadius: 14,
+                    marginRight: size === 'normal' ? 16 : 0,
+                    marginBottom: size === 'small' ? 14 : 0,
+                }}
+                resizeMode="cover"
+            />
+        )}
+        <View style={{ flex: 1 }}>
+            <Text style={{ fontWeight: 'bold', color: '#111827', fontSize: 16 }} numberOfLines={2}>{news.title}</Text>
+            <Text style={{ color: '#6b7280', fontSize: 14, marginTop: 6 }} numberOfLines={2}>{news.excerpt}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12 }}>
+                <View style={{
+                    paddingHorizontal: 12,
+                    paddingVertical: 5,
+                    borderRadius: 10,
+                    backgroundColor: news.status === 'Published' ? '#dcfce7' : '#fef3c7',
+                }}>
+                    <Text style={{ fontSize: 12, fontWeight: 'bold', color: news.status === 'Published' ? '#16a34a' : '#d97706' }}>
+                        {news.status}
+                    </Text>
+                </View>
+            </View>
         </View>
     </View>
 );
 
-const TeamMemberCard = ({ name, role, avatar, stats }: any) => (
-    <View className="bg-white p-4 rounded-2xl border border-gray-100 mr-4 w-48">
-        <View className="flex-row items-center mb-3">
-            <Image source={{ uri: avatar }} className="w-12 h-12 rounded-full mr-3" />
-            <View className="flex-1">
-                <Text className="font-bold text-gray-900 text-sm">{name}</Text>
-                <Text className="text-gray-500 text-xs">{role}</Text>
-            </View>
+// District Card Component - LARGER SIZE
+const DistrictCard = ({ district }: { district: any }) => (
+    <View style={{
+        width: 160,
+        backgroundColor: 'white',
+        borderRadius: 18,
+        padding: 16,
+        marginRight: 14,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 6,
+        elevation: 4,
+        borderWidth: 1,
+        borderColor: '#f3f4f6',
+    }}>
+        <View style={{
+            width: 48,
+            height: 48,
+            borderRadius: 14,
+            backgroundColor: '#eef2ff',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: 12,
+        }}>
+            <MapPin size={24} color="#4F46E5" />
         </View>
-        <View className="flex-row justify-between">
-            <View>
-                <Text className="text-xs text-gray-400">Tasks</Text>
-                <Text className="text-sm font-bold text-gray-900">{stats.tasks}</Text>
-            </View>
-            <View>
-                <Text className="text-xs text-gray-400">Score</Text>
-                <Text className="text-sm font-bold text-indigo-600">{stats.score}</Text>
-            </View>
-        </View>
+        <Text style={{ fontWeight: 'bold', fontSize: 16, color: '#111827' }} numberOfLines={1}>{district.name}</Text>
+        <Text style={{ fontSize: 13, color: '#6b7280', marginTop: 6 }}>{district.code || 'UP'}</Text>
     </View>
 );
 
 export default function Dashboard() {
+    const router = useRouter();
+    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState({
+        districts: 0,
+        posters: 0,
+        posterDownloads: 0,
+        news: 0,
+        publishedNews: 0,
+        draftNews: 0,
+    });
+    const [allNews, setAllNews] = useState<any[]>([]);
+    const [allPosters, setAllPosters] = useState<any[]>([]);
+    const [districts, setDistricts] = useState<any[]>([]);
+
+    useEffect(() => {
+        fetchDashboardData();
+    }, []);
+
+    const fetchDashboardData = async () => {
+        try {
+            setLoading(true);
+
+            // Fetch districts
+            const districtsRes = await fetch(`${API_URL}/districts`);
+            const districtsData = await districtsRes.json();
+            // Handle both array format and { data: [] } format
+            const districtsList = Array.isArray(districtsData) ? districtsData : (districtsData.data || []);
+            setDistricts(districtsList);
+
+            // Fetch poster stats
+            const posterStatsRes = await fetch(`${API_URL}/posters/stats`);
+            const posterStats = await posterStatsRes.json();
+
+            // Fetch all posters
+            const postersRes = await fetch(`${API_URL}/posters`);
+            const postersData = await postersRes.json();
+            setAllPosters(postersData.posters || []);
+
+            // Fetch news
+            const newsRes = await fetch(`${API_URL}/news`);
+            const newsData = await newsRes.json();
+            const newsList = newsData.data || [];
+            setAllNews(newsList);
+
+            const publishedNews = newsList.filter((n: any) => n.status === 'Published').length;
+            const draftNews = newsList.filter((n: any) => n.status === 'Draft').length;
+
+            setStats({
+                districts: districtsList.length,
+                posters: posterStats.totalPosters || 0,
+                posterDownloads: posterStats.totalDownloads || 0,
+                news: newsList.length,
+                publishedNews,
+                draftNews,
+            });
+
+        } catch (error) {
+            console.error('Error fetching dashboard data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Split posters: show all in carousel
+    const carouselPosters = allPosters;
+
+    // Split news: first 5 in list, rest in carousel
+    const listNews = allNews.slice(0, 5);
+    const carouselNews = allNews.slice(5);
+
+    if (loading) {
+        return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f9fafb' }}>
+                <ActivityIndicator size="large" color="#4F46E5" />
+                <Text style={{ marginTop: 16, color: '#6b7280', fontWeight: '500' }}>Loading dashboard...</Text>
+            </View>
+        );
+    }
+
     return (
-        <ScrollView className="flex-1 bg-gray-50" showsVerticalScrollIndicator={false}>
-            <View className="relative overflow-hidden">
-                <LinearGradient colors={['#4F46E5', '#7C3AED']} className="pt-12 pb-20 px-6 rounded-b-[40px]">
-                    <AnimatedBubble size={150} top={10} left={screenWidth - 100} />
-                    <AnimatedBubble size={100} top={120} left={20} />
-                    <AnimatedBubble size={80} top={60} left={screenWidth / 2} />
+        <ScrollView style={{ flex: 1, backgroundColor: '#f9fafb' }} showsVerticalScrollIndicator={false}>
+            {/* Header */}
+            <View style={{ position: 'relative', overflow: 'hidden' }}>
+                <LinearGradient
+                    colors={['#4F46E5', '#7C3AED']}
+                    style={{
+                        paddingTop: 48,
+                        paddingBottom: 24,
+                        paddingHorizontal: 20,
+                        borderBottomLeftRadius: 32,
+                        borderBottomRightRadius: 32,
+                    }}
+                >
+                    <AnimatedBubble size={120} top={10} left={screenWidth - 80} />
+                    <AnimatedBubble size={80} top={80} left={20} />
 
-                    <View className="flex-row justify-between items-center z-10 mb-6">
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                         <View>
-                            <Text className="text-indigo-200 text-lg font-medium">Welcome back,</Text>
-                            <Text className="text-white text-3xl font-bold">Admin Dashboard</Text>
+                            <Text style={{ color: '#c7d2fe', fontSize: 16, fontWeight: '500' }}>Welcome back,</Text>
+                            <Text style={{ color: 'white', fontSize: 24, fontWeight: 'bold' }}>Admin Dashboard</Text>
                         </View>
-                        <TouchableOpacity className="bg-white/20 p-1.5 rounded-full border-2 border-white/30">
-                            <Image source={{ uri: 'https://avatar.iran.liara.run/public/boy' }} className="w-12 h-12 rounded-full" />
+                        <TouchableOpacity style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: 4, borderRadius: 50, borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)' }}>
+                            <Image source={{ uri: 'https://avatar.iran.liara.run/public/boy' }} style={{ width: 44, height: 44, borderRadius: 22 }} />
                         </TouchableOpacity>
-                    </View>
-
-                    <View className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20">
-                        <Text className="text-white font-semibold mb-1">Today's Progress</Text>
-                        <View className="h-2 bg-white/20 rounded-full overflow-hidden">
-                            <View className="h-full bg-white rounded-full" style={{ width: '68%' }} />
-                        </View>
-                        <Text className="text-white/80 text-xs mt-2">68% of daily goals completed</Text>
                     </View>
                 </LinearGradient>
             </View>
 
-            <View className="px-2 py-2 pb-24">
-                {/* STATS CARDS - Carousel on Mobile, Grid on Desktop */}
-                {screenWidth < 768 ? (
-                    <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        className="mb-6 -mx-2"
-                        pagingEnabled
-                        snapToInterval={screenWidth - 40}
-                        decelerationRate="fast"
-                    >
-                        <View style={{ width: screenWidth - 40 }}>
-                            <StatsCard title="Revenue" value="₹2.4M" change="+18%" icon={TrendingUp} gradient={['#10b981', '#059669']} />
-                        </View>
-                        <View style={{ width: screenWidth - 40 }}>
-                            <StatsCard title="Districts" value="75" change="+2" icon={Map} gradient={['#f59e0b', '#ef4444']} />
-                        </View>
-                        <View style={{ width: screenWidth - 40 }}>
-                            <StatsCard title="Total Members" value="12,450" change="+12%" icon={Users} gradient={['#6366f1', '#8b5cf6']} />
-                        </View>
-                        <View style={{ width: screenWidth - 40 }}>
-                            <StatsCard title="Active Tasks" value="45" change="+5%" icon={CheckSquare} gradient={['#0ea5e9', '#3b82f6']} />
-                        </View>
+            <View style={{ padding: 16, paddingBottom: 100 }}>
+                {/* Stats Cards Row */}
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 20, marginTop: -20 }}>
+                    <StatsCard title="Districts" value={stats.districts} icon={Map} gradient={['#f59e0b', '#ef4444']} onPress={() => router.push('/(admin)/districts' as any)} />
+                    <StatsCard title="Posters" value={stats.posters} change={`⬇️${stats.posterDownloads}`} icon={ImageIcon} gradient={['#6366f1', '#8b5cf6']} onPress={() => router.push('/(admin)/posters' as any)} />
+                </View>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 20 }}>
+                    <StatsCard title="News" value={stats.news} change={`${stats.publishedNews} Live`} icon={Newspaper} gradient={['#10b981', '#059669']} onPress={() => router.push('/(admin)/news' as any)} />
+                    <StatsCard title="Downloads" value={stats.posterDownloads} icon={TrendingUp} gradient={['#0ea5e9', '#3b82f6']} />
+                </View>
 
+                {/* Quick Actions */}
+                <View style={{ backgroundColor: 'white', padding: 16, borderRadius: 20, marginBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}>
+                    <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#111827', marginBottom: 12 }}>Quick Actions</Text>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
+                        <QuickActionButton icon={Map} label="Districts" color="#eef2ff" onPress={() => router.push('/(admin)/districts' as any)} />
+                        <QuickActionButton icon={ImageIcon} label="Posters" color="#f5f3ff" onPress={() => router.push('/(admin)/posters' as any)} />
+                        <QuickActionButton icon={Newspaper} label="News" color="#ecfdf5" onPress={() => router.push('/(admin)/news' as any)} />
+                        <QuickActionButton icon={Settings} label="Settings" color="#f3f4f6" />
+                    </View>
+                </View>
 
-                    </ScrollView>
-                ) : (
-                    <View className="flex-row flex-wrap -mx-2 mb-6">
-                        <View className="w-1/4 p-2">
-                            <StatsCard title="Total Members" value="12,450" change="+12%" icon={Users} gradient={['#6366f1', '#8b5cf6']} />
+                {/* Districts Section */}
+                {districts.length > 0 && (
+                    <View style={{ marginBottom: 24 }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                            <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#111827' }}>📍 Districts</Text>
+                            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }} onPress={() => router.push('/(admin)/districts' as any)}>
+                                <Text style={{ color: '#4F46E5', fontSize: 14, fontWeight: '600', marginRight: 4 }}>View All ({stats.districts})</Text>
+                                <ChevronRight size={18} color="#4F46E5" />
+                            </TouchableOpacity>
                         </View>
-                        <View className="w-1/4 p-2">
-                            <StatsCard title="Active Tasks" value="45" change="+5%" icon={CheckSquare} gradient={['#0ea5e9', '#3b82f6']} />
-                        </View>
-                        <View className="w-1/4 p-2">
-                            <StatsCard title="Districts" value="75" change="+2" icon={Map} gradient={['#f59e0b', '#ef4444']} />
-                        </View>
-                        <View className="w-1/4 p-2">
-                            <StatsCard title="Revenue" value="₹2.4M" change="+18%" icon={TrendingUp} gradient={['#10b981', '#059669']} />
-                        </View>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                            {districts.slice(0, 10).map((district: any) => (
+                                <DistrictCard key={district._id} district={district} />
+                            ))}
+                        </ScrollView>
                     </View>
                 )}
 
-                <View className="bg-white p-5 rounded-3xl shadow-sm mb-6">
-                    <Text className="text-lg font-bold text-gray-800 mb-4">Quick Actions</Text>
-                    <View className="flex-row flex-wrap justify-around">
-                        <QuickActionButton icon={UserPlus} label="Add Member" color="bg-indigo-50" />
-                        <QuickActionButton icon={FileText} label="New Task" color="bg-blue-50" />
-                        <QuickActionButton icon={Award} label="Rewards" color="bg-amber-50" />
-                        <QuickActionButton icon={Settings} label="Settings" color="bg-gray-50" />
+                {/* Posters Section - Carousel */}
+                {allPosters.length > 0 && (
+                    <View style={{ marginBottom: 24 }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                            <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#111827' }}>🖼️ Posters</Text>
+                            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }} onPress={() => router.push('/(admin)/posters' as any)}>
+                                <Text style={{ color: '#4F46E5', fontSize: 14, fontWeight: '600', marginRight: 4 }}>View All ({stats.posters})</Text>
+                                <ChevronRight size={18} color="#4F46E5" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                            {carouselPosters.map((poster: any) => (
+                                <PosterCard key={poster._id} poster={poster} size="small" />
+                            ))}
+                        </ScrollView>
+                    </View>
+                )}
+
+                {/* News Section */}
+                {allNews.length > 0 && (
+                    <View style={{ marginBottom: 24 }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                            <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#111827' }}>📰 Latest News</Text>
+                            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }} onPress={() => router.push('/(admin)/news' as any)}>
+                                <Text style={{ color: '#4F46E5', fontSize: 14, fontWeight: '600', marginRight: 4 }}>View All ({stats.news})</Text>
+                                <ChevronRight size={18} color="#4F46E5" />
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* First 5 News in List */}
+                        {listNews.map((news: any) => (
+                            <NewsCard key={news._id} news={news} />
+                        ))}
+
+                        {/* Remaining News in Carousel */}
+                        {carouselNews.length > 0 && (
+                            <View style={{ marginTop: 16 }}>
+                                <Text style={{ fontSize: 14, color: '#6b7280', marginBottom: 10 }}>More news →</Text>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                                    {carouselNews.map((news: any) => (
+                                        <NewsCard key={news._id} news={news} size="small" />
+                                    ))}
+                                </ScrollView>
+                            </View>
+                        )}
+                    </View>
+                )}
+
+                {/* Stats Summary */}
+                <View style={{ backgroundColor: 'white', padding: 18, borderRadius: 20, marginBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}>
+                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#111827', marginBottom: 14 }}>📈 Summary</Text>
+
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12, backgroundColor: '#eef2ff', borderRadius: 12, marginBottom: 10 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Map size={20} color="#4F46E5" />
+                            <Text style={{ marginLeft: 10, color: '#374151', fontWeight: '600', fontSize: 14 }}>Districts</Text>
+                        </View>
+                        <Text style={{ color: '#4F46E5', fontWeight: 'bold', fontSize: 18 }}>{stats.districts}</Text>
+                    </View>
+
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12, backgroundColor: '#f5f3ff', borderRadius: 12, marginBottom: 10 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <ImageIcon size={20} color="#8B5CF6" />
+                            <Text style={{ marginLeft: 10, color: '#374151', fontWeight: '600', fontSize: 14 }}>Posters</Text>
+                        </View>
+                        <Text style={{ color: '#8B5CF6', fontWeight: 'bold', fontSize: 18 }}>{stats.posters}</Text>
+                    </View>
+
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12, backgroundColor: '#ecfdf5', borderRadius: 12, marginBottom: 10 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Newspaper size={20} color="#10B981" />
+                            <Text style={{ marginLeft: 10, color: '#374151', fontWeight: '600', fontSize: 14 }}>Published</Text>
+                        </View>
+                        <Text style={{ color: '#10B981', fontWeight: 'bold', fontSize: 18 }}>{stats.publishedNews}</Text>
+                    </View>
+
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12, backgroundColor: '#fef3c7', borderRadius: 12 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <FileText size={20} color="#F59E0B" />
+                            <Text style={{ marginLeft: 10, color: '#374151', fontWeight: '600', fontSize: 14 }}>Drafts</Text>
+                        </View>
+                        <Text style={{ color: '#F59E0B', fontWeight: 'bold', fontSize: 18 }}>{stats.draftNews}</Text>
                     </View>
                 </View>
 
-                <View className="mb-6">
-                    <View className="bg-white p-5 rounded-3xl shadow-sm">
-                        <View className="flex-row justify-between items-center mb-4">
-                            <View>
-                                <Text className="text-lg font-bold text-gray-800">Member Growth</Text>
-                                <Text className="text-gray-400 text-xs">Last 7 months</Text>
-                            </View>
-                            <View className="bg-green-50 px-3 py-1 rounded-lg">
-                                <Text className="text-green-600 text-xs font-bold">+12.5%</Text>
-                            </View>
+                {/* System Status */}
+                <View style={{ backgroundColor: 'white', padding: 18, borderRadius: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}>
+                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#111827', marginBottom: 14 }}>🔧 System</Text>
+
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12, backgroundColor: '#dcfce7', borderRadius: 12, marginBottom: 10 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <CheckCircle size={20} color="#16a34a" />
+                            <Text style={{ marginLeft: 10, color: '#374151', fontWeight: '600', fontSize: 14 }}>API Status</Text>
                         </View>
-
-                        <LineChart
-                            data={{
-                                labels: ["Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-                                datasets: [{
-                                    data: [980, 1100, 1134, 1262, 1421, 1550, 1600],
-                                    color: (opacity = 1) => `rgba(79, 70, 229, ${opacity})`,
-                                    strokeWidth: 4
-                                }]
-                            }}
-                            width={screenWidth - 60}
-                            height={220}
-                            chartConfig={chartConfig}
-                            bezier
-                            style={{ borderRadius: 16 }}
-                            withVerticalLines={false}
-                        />
-                    </View>
-                </View>
-
-                <View className="mb-6">
-                    <Text className="text-lg font-bold text-gray-800 mb-3 px-2">Performance Metrics</Text>
-                    <View className="flex-row flex-wrap -mx-1">
-                        <MetricCard label="Engagement" value="94%" icon={Activity} bgColor="bg-blue-50" iconColor="#3B82F6" />
-                        <MetricCard label="Response" value="2.4h" icon={Clock} bgColor="bg-purple-50" iconColor="#A855F7" />
-                        <MetricCard label="Rating" value="4.8" icon={Star} bgColor="bg-yellow-50" iconColor="#F59E0B" />
-
-                    </View>
-                </View>
-
-                <View className="flex-row flex-wrap -mx-2 mb-6">
-                    <View className="w-full lg:w-1/2 p-2">
-                        <View className="bg-white p-5 rounded-3xl shadow-sm">
-                            <View className="flex-row justify-between items-center mb-4">
-                                <Text className="text-lg font-bold text-gray-800">Recent Activity</Text>
-                                <TouchableOpacity><Text className="text-indigo-600 text-sm font-medium">View All</Text></TouchableOpacity>
-                            </View>
-                            <ActivityItem title="New member joined" time="2 min ago" icon={UserPlus} color="#10B981" bg="bg-emerald-50" />
-                            <ActivityItem title="Task completed" time="15 min ago" icon={CheckCircle} color="#3B82F6" bg="bg-blue-50" />
-                            <ActivityItem title="District updated" time="1 hour ago" icon={Map} color="#F59E0B" bg="bg-amber-50" />
-                            <ActivityItem title="Report generated" time="2 hours ago" icon={FileText} color="#8B5CF6" bg="bg-purple-50" />
-                        </View>
+                        <Text style={{ color: '#16a34a', fontWeight: 'bold' }}>Online</Text>
                     </View>
 
-                    <View className="w-full lg:w-1/2 p-2">
-                        <View className="bg-white p-5 rounded-3xl shadow-sm">
-                            <View className="flex-row justify-between items-center mb-4">
-                                <Text className="text-lg font-bold text-gray-800">Upcoming Events</Text>
-                                <TouchableOpacity><Calendar size={20} color="#4F46E5" /></TouchableOpacity>
-                            </View>
-
-                            <View className="bg-indigo-50 p-4 rounded-2xl mb-3 flex-row border border-indigo-100">
-                                <View className="bg-white p-3 rounded-xl items-center mr-3">
-                                    <Text className="text-indigo-600 font-bold text-xs">NOV</Text>
-                                    <Text className="text-gray-900 font-bold text-xl">25</Text>
-                                </View>
-                                <View className="flex-1">
-                                    <Text className="text-gray-900 font-bold">District Meeting</Text>
-                                    <Text className="text-indigo-600 text-xs mt-1">10:00 AM • Lucknow HQ</Text>
-                                </View>
-                            </View>
-
-                            <View className="bg-pink-50 p-4 rounded-2xl flex-row border border-pink-100">
-                                <View className="bg-white p-3 rounded-xl items-center mr-3">
-                                    <Text className="text-pink-600 font-bold text-xs">DEC</Text>
-                                    <Text className="text-gray-900 font-bold text-xl">02</Text>
-                                </View>
-                                <View className="flex-1">
-                                    <Text className="text-gray-900 font-bold">Training Workshop</Text>
-                                    <Text className="text-pink-600 text-xs mt-1">2:00 PM • Online</Text>
-                                </View>
-                            </View>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12, backgroundColor: '#dbeafe', borderRadius: 12 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Activity size={20} color="#3B82F6" />
+                            <Text style={{ marginLeft: 10, color: '#374151', fontWeight: '600', fontSize: 14 }}>Last Refresh</Text>
                         </View>
-                    </View>
-                </View>
-
-                <View className="mb-6">
-                    <View className="flex-row justify-between items-center mb-3 px-2">
-                        <Text className="text-lg font-bold text-gray-800">Team Overview</Text>
-                        <TouchableOpacity className="flex-row items-center">
-                            <Text className="text-indigo-600 text-sm font-medium mr-1">See All</Text>
-                            <ChevronRight size={16} color="#4F46E5" />
-                        </TouchableOpacity>
-                    </View>
-
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} className="pl-2">
-                        <TeamMemberCard name="Rahul Yadav" role="District Head" avatar="https://avatar.iran.liara.run/public/1" stats={{ tasks: 24, score: 95 }} />
-                        <TeamMemberCard name="Priya Singh" role="Coordinator" avatar="https://avatar.iran.liara.run/public/2" stats={{ tasks: 18, score: 88 }} />
-                        <TeamMemberCard name="Amit Kumar" role="Volunteer" avatar="https://avatar.iran.liara.run/public/3" stats={{ tasks: 32, score: 92 }} />
-                    </ScrollView>
-                </View>
-
-                <View className="relative overflow-hidden mb-6">
-                    <LinearGradient colors={['#F97316', '#EF4444']} className="p-5 rounded-3xl">
-                        <AnimatedBubble size={120} top={-20} left={screenWidth - 150} />
-                        <AnimatedBubble size={80} top={80} left={20} />
-
-                        <View className="flex-row items-center justify-between">
-                            <View className="flex-1 mr-4">
-                                <View className="bg-yellow-500/30 self-start px-3 py-1 rounded-full mb-3">
-                                    <Text className="text-yellow-100 text-xs font-bold uppercase">Important</Text>
-                                </View>
-                                <Text className="text-white text-xl font-bold mb-2">Election Mode Active</Text>
-                                <Text className="text-white/90 text-sm mb-4">Monitor real-time booth activities.</Text>
-                                <TouchableOpacity className="bg-white px-5 py-2.5 rounded-xl self-start">
-                                    <Text className="text-orange-600 font-bold text-sm">View Dashboard</Text>
-                                </TouchableOpacity>
-                            </View>
-                            <View className="bg-white/20 p-4 rounded-full">
-                                <Shield size={40} color="white" />
-                            </View>
-                        </View>
-                    </LinearGradient>
-                </View>
-
-                <View className="mb-6">
-                    <View className="bg-white p-5 rounded-3xl shadow-sm">
-                        <Text className="text-lg font-bold text-gray-800 mb-4">System Health</Text>
-
-                        <View className="flex-row items-center justify-between mb-3 p-3 bg-green-50 rounded-xl">
-                            <View className="flex-row items-center">
-                                <CheckCircle size={20} color="#10B981" />
-                                <Text className="ml-2 text-gray-700 font-medium">Server Status</Text>
-                            </View>
-                            <Text className="text-green-600 font-bold">Online</Text>
-                        </View>
-
-                        <View className="flex-row items-center justify-between mb-3 p-3 bg-blue-50 rounded-xl">
-                            <View className="flex-row items-center">
-                                <Activity size={20} color="#3B82F6" />
-                                <Text className="ml-2 text-gray-700 font-medium">CPU Usage</Text>
-                            </View>
-                            <Text className="text-blue-600 font-bold">24%</Text>
-                        </View>
-
-                        <View className="flex-row items-center justify-between p-3 bg-yellow-50 rounded-xl">
-                            <View className="flex-row items-center">
-                                <AlertTriangle size={20} color="#F59E0B" />
-                                <Text className="ml-2 text-gray-700 font-medium">Alerts</Text>
-                            </View>
-                            <Text className="text-yellow-600 font-bold">3</Text>
-                        </View>
+                        <Text style={{ color: '#3B82F6', fontWeight: 'bold' }}>Just now</Text>
                     </View>
                 </View>
             </View>

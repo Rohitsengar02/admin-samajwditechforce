@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Shield, Check, X, MapPin, User, Phone, Calendar, Facebook, Instagram, Youtube, Twitter } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getApiUrl } from '../../../utils/api';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -29,17 +30,6 @@ export default function VerificationsPage() {
     useEffect(() => {
         fetchVerifications();
     }, []);
-
-    const getApiUrl = () => {
-        if (Platform.OS === 'android') {
-            return 'http://192.168.1.46:5001/api';
-        }
-        if (Platform.OS === 'ios') {
-            return 'http://localhost:5001/api';
-        }
-        const baseUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5001';
-        return baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
-    };
 
     const fetchVerifications = async () => {
         try {

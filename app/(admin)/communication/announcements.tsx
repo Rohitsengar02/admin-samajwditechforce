@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, TextInput, Dimensions, Activi
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { ArrowLeft, Bell, Plus, Edit, Trash2, Eye, Calendar, X, CheckCircle } from 'lucide-react-native';
+import { getApiUrl } from '../../../utils/api';
 
 const screenWidth = Dimensions.get('window').width;
 const AnimatedBubble = ({ size, top, left }: { size: number; top: number; left: number }) => (
@@ -23,15 +24,7 @@ export default function AnnouncementsPage() {
         priority: 'Medium'
     });
 
-    const getApiUrl = () => {
-        const baseUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000';
-        if (Platform.OS === 'android') {
-            return baseUrl.replace('localhost', '10.0.2.2');
-        }
-        return baseUrl;
-    };
-
-    const API_URL = `${getApiUrl()}/api/announcements`;
+    const API_URL = `${getApiUrl()}/announcements`;
 
     const fetchAnnouncements = async () => {
         try {
@@ -237,13 +230,13 @@ export default function AnnouncementsPage() {
                                             key={p}
                                             onPress={() => setFormData({ ...formData, priority: p })}
                                             className={`flex-1 py-3 rounded-xl items-center border ${formData.priority === p
-                                                    ? (p === 'High' ? 'bg-red-50 border-red-500' : p === 'Medium' ? 'bg-amber-50 border-amber-500' : 'bg-emerald-50 border-emerald-500')
-                                                    : 'bg-gray-50 border-gray-200'
+                                                ? (p === 'High' ? 'bg-red-50 border-red-500' : p === 'Medium' ? 'bg-amber-50 border-amber-500' : 'bg-emerald-50 border-emerald-500')
+                                                : 'bg-gray-50 border-gray-200'
                                                 }`}
                                         >
                                             <Text className={`font-bold ${formData.priority === p
-                                                    ? (p === 'High' ? 'text-red-600' : p === 'Medium' ? 'text-amber-600' : 'text-emerald-600')
-                                                    : 'text-gray-500'
+                                                ? (p === 'High' ? 'text-red-600' : p === 'Medium' ? 'text-amber-600' : 'text-emerald-600')
+                                                : 'text-gray-500'
                                                 }`}>{p}</Text>
                                         </TouchableOpacity>
                                     ))}

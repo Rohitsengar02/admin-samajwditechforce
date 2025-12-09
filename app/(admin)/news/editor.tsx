@@ -1,30 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Dimensions, Image, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Dimensions, Image, Alert, ActivityIndicator, Modal, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
     ArrowLeft, Save, Image as ImageIcon, Type, AlignLeft, List,
-    Trash2, Plus, CheckCircle, Upload, MoreVertical, X
+    Trash2, Plus, CheckCircle, Upload, MoreVertical, X, Sparkles
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { getApiUrl } from '../../../utils/api';
 
 const screenWidth = Dimensions.get('window').width;
 const AnimatedBubble = ({ size, top, left }: { size: number; top: number; left: number }) => (
     <View style={{ position: 'absolute', width: size, height: size, top, left, backgroundColor: 'rgba(255, 255, 255, 0.1)', borderRadius: size / 2, opacity: 0.6 }} />
 );
-
-import { Platform } from 'react-native';
-
-const getApiUrl = () => {
-    if (Platform.OS === 'android') {
-        return 'http://192.168.1.46:5001/api';
-    }
-    if (Platform.OS === 'ios') {
-        return 'http://localhost:5001/api';
-    }
-    const baseUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5001';
-    return baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
-};
 
 const API_URL = `${getApiUrl()}/news`;
 const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dssmutzly/image/upload';
@@ -40,6 +28,116 @@ interface ContentBlock {
     meta?: any;
 }
 
+// Success Modal Component
+const SuccessModal = ({ visible, onClose, isEditing }: { visible: boolean; onClose: () => void; isEditing: boolean }) => (
+    <Modal
+        visible={visible}
+        transparent
+        animationType="fade"
+        onRequestClose={onClose}
+    >
+        <View style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: 24,
+        }}>
+            <View style={{
+                backgroundColor: 'white',
+                borderRadius: 32,
+                padding: 32,
+                alignItems: 'center',
+                width: '100%',
+                maxWidth: 340,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 10 },
+                shadowOpacity: 0.25,
+                shadowRadius: 20,
+                elevation: 10,
+            }}>
+                {/* Success Icon */}
+                <View style={{
+                    width: 100,
+                    height: 100,
+                    borderRadius: 50,
+                    backgroundColor: '#dcfce7',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    marginBottom: 24,
+                }}>
+                    <View style={{
+                        width: 70,
+                        height: 70,
+                        borderRadius: 35,
+                        backgroundColor: '#22c55e',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                    }}>
+                        <CheckCircle size={40} color="white" />
+                    </View>
+                </View>
+
+                {/* Sparkles decoration */}
+                <View style={{ position: 'absolute', top: 40, left: 40 }}>
+                    <Sparkles size={24} color="#fbbf24" />
+                </View>
+                <View style={{ position: 'absolute', top: 60, right: 50 }}>
+                    <Sparkles size={18} color="#f472b6" />
+                </View>
+
+                {/* Title */}
+                <Text style={{
+                    fontSize: 28,
+                    fontWeight: 'bold',
+                    color: '#1f2937',
+                    marginBottom: 12,
+                    textAlign: 'center',
+                }}>
+                    🎉 {isEditing ? 'Updated!' : 'Published!'}
+                </Text>
+
+                {/* Message */}
+                <Text style={{
+                    fontSize: 16,
+                    color: '#6b7280',
+                    textAlign: 'center',
+                    marginBottom: 32,
+                    lineHeight: 24,
+                }}>
+                    Your news article has been {isEditing ? 'updated' : 'published'} successfully and is now live!
+                </Text>
+
+                {/* Button */}
+                <TouchableOpacity
+                    onPress={onClose}
+                    style={{
+                        width: '100%',
+                        borderRadius: 16,
+                        overflow: 'hidden',
+                    }}
+                >
+                    <LinearGradient
+                        colors={['#22c55e', '#16a34a']}
+                        style={{
+                            paddingVertical: 16,
+                            alignItems: 'center',
+                        }}
+                    >
+                        <Text style={{
+                            color: 'white',
+                            fontSize: 18,
+                            fontWeight: 'bold',
+                        }}>
+                            View News 🚀
+                        </Text>
+                    </LinearGradient>
+                </TouchableOpacity>
+            </View>
+        </View>
+    </Modal>
+);
+
 export default function NewsEditorPage() {
     const router = useRouter();
     const params = useLocalSearchParams();
@@ -51,6 +149,7 @@ export default function NewsEditorPage() {
     const [blocks, setBlocks] = useState<ContentBlock[]>([]);
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
 
     useEffect(() => {
         console.log('API_URL:', API_URL);
@@ -130,7 +229,11 @@ export default function NewsEditorPage() {
         console.log('API_URL:', API_URL);
 
         if (!title || !excerpt) {
-            Alert.alert('Validation Error', 'Title and Excerpt are required');
+            if (Platform.OS === 'web') {
+                alert('⚠️ Title and Excerpt are required');
+            } else {
+                Alert.alert('Validation Error', 'Title and Excerpt are required');
+            }
             return;
         }
 
@@ -170,9 +273,8 @@ export default function NewsEditorPage() {
             }
 
             if (data.success) {
-                Alert.alert('Success! 🎉', `News ${isEditing ? 'updated' : 'created'} successfully!`, [
-                    { text: 'OK', onPress: () => router.push('/(admin)/news') }
-                ]);
+                // Show beautiful success modal
+                setShowSuccessModal(true);
             } else {
                 const errorMessage = Array.isArray(data.error) ? data.error.join('\n') : (data.error || 'Failed to save news');
                 throw new Error(errorMessage);
@@ -180,10 +282,19 @@ export default function NewsEditorPage() {
         } catch (error) {
             console.error('=== ERROR SAVING NEWS ===');
             console.error(error);
-            Alert.alert('Error', `Failed to save: ${(error as Error).message}\n\nAPI: ${API_URL}`);
+            if (Platform.OS === 'web') {
+                alert(`❌ Failed to save: ${(error as Error).message}`);
+            } else {
+                Alert.alert('Error', `Failed to save: ${(error as Error).message}\n\nAPI: ${API_URL}`);
+            }
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleSuccessModalClose = () => {
+        setShowSuccessModal(false);
+        router.push('/(admin)/news' as any);
     };
 
     const addBlock = (type: BlockType) => {
@@ -212,7 +323,7 @@ export default function NewsEditorPage() {
         switch (block.type) {
             case 'heading':
                 return (
-                    <View key={block.id} className="mb-4">
+                    <View key={block.id} className="mb-24">
                         <View className="flex-row justify-between items-center mb-2">
                             <View className="flex-row space-x-2">
                                 {['h1', 'h2', 'h3'].map((size) => (
@@ -375,7 +486,7 @@ export default function NewsEditorPage() {
                     </View>
                 </LinearGradient>
 
-                <View className="w-full max-w-5xl mx-auto px-4 pb-32">
+                <View className="w-full max-w-5xl mx-auto px-4 pb-64">
                     {/* Main Title */}
                     <View className="bg-white rounded-3xl p-6 shadow-lg mb-6 -mt-10">
                         <Text className="text-gray-500 font-bold text-xs uppercase mb-2">Article Title</Text>
@@ -386,10 +497,10 @@ export default function NewsEditorPage() {
                             value={title}
                             onChangeText={setTitle}
                         />
-                        <Text className="text-gray-500 font-bold text-xs uppercase mb-2">Excerpt</Text>
+                        <Text className="text-gray-500 font-bold text-xs uppercase mb-2">Description</Text>
                         <TextInput
                             className="text-gray-700 text-sm leading-relaxed border-t border-gray-100 pt-2"
-                            placeholder="Short summary..."
+                            placeholder="Enter description..."
                             multiline
                             value={excerpt}
                             onChangeText={setExcerpt}
@@ -454,8 +565,31 @@ export default function NewsEditorPage() {
             </ScrollView>
 
             {/* Bottom Action Bar */}
-            <View className="absolute bottom-0 w-full bg-white border-t border-gray-100 shadow-2xl">
-                <View className="w-full max-w-5xl mx-auto p-4 px-6 pb-8 flex-row items-center justify-between">
+            <View style={{
+                position: 'absolute',
+                bottom: 0,
+                width: '100%',
+                backgroundColor: 'white',
+                borderTopWidth: 1,
+                borderTopColor: '#f3f4f6',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: -4 },
+                shadowOpacity: 0.1,
+                shadowRadius: 8,
+                elevation: 10,
+                paddingBottom: Platform.OS === 'ios' ? 44 : 74,
+            }}>
+                <View style={{
+                    width: '100%',
+                    maxWidth: 800,
+                    marginHorizontal: 'auto',
+                    paddingHorizontal: 24,
+                    paddingTop: 16,
+                    paddingBottom: 16,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
+                }}>
                     <TouchableOpacity
                         onPress={() => {
                             console.log('Draft button pressed!');
@@ -513,6 +647,14 @@ export default function NewsEditorPage() {
                     </TouchableOpacity>
                 </View>
             </View>
+
+            {/* Success Modal */}
+            <SuccessModal
+                visible={showSuccessModal}
+                onClose={handleSuccessModalClose}
+                isEditing={isEditing}
+            />
         </View>
     );
 }
+

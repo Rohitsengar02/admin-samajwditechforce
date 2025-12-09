@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, Image, Dimensions, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, Image, Dimensions, Platform, ActivityIndicator, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import {
     Search, Filter, Plus, Phone, MapPin, Mail, Calendar,
-    Award, MessageCircle, MoreVertical, Users, TrendingUp, Star
+    Award, MessageCircle, MoreVertical, Users, TrendingUp, Star, Trash2
 } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -39,8 +39,9 @@ const StatCard = ({ icon: Icon, label, value, color, bgColor }: any) => (
     </View>
 );
 
-const MemberCard = ({ member }: { member: any }) => {
+const MemberCard = ({ member, onDelete }: { member: any; onDelete: (id: string, name: string) => void }) => {
     const router = useRouter();
+    const [showMenu, setShowMenu] = useState(false);
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -55,7 +56,7 @@ const MemberCard = ({ member }: { member: any }) => {
 
     return (
         <TouchableOpacity onPress={() => router.push(`/(admin)/members/${member._id}` as any)}>
-            <View className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
+            <View className="bg-white mb-24 rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
                 <LinearGradient colors={['#6366f1', '#8b5cf6']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} className="p-5 relative">
                     <AnimatedBubble size={100} top={-30} left={200} />
                     <AnimatedBubble size={70} top={30} left={-20} />
@@ -78,9 +79,60 @@ const MemberCard = ({ member }: { member: any }) => {
                             </View>
                         </View>
 
-                        <TouchableOpacity className="bg-white/20 p-2 rounded-xl backdrop-blur-md">
-                            <MoreVertical size={20} color="white" />
-                        </TouchableOpacity>
+                        <View style={{ position: 'relative' }}>
+                            <TouchableOpacity
+                                className="bg-white/20 p-2 rounded-xl backdrop-blur-md"
+                                onPress={(e) => {
+                                    e.stopPropagation();
+                                    setShowMenu(!showMenu);
+                                }}
+                            >
+                                <MoreVertical size={20} color="white" />
+                            </TouchableOpacity>
+
+                            {showMenu && (
+                                <View style={{
+                                    position: 'absolute',
+                                    top: 45,
+                                    right: 0,
+                                    backgroundColor: 'white',
+                                    borderRadius: 12,
+                                    shadowColor: '#000',
+                                    shadowOffset: { width: 0, height: 4 },
+                                    shadowOpacity: 0.15,
+                                    shadowRadius: 12,
+                                    elevation: 8,
+                                    minWidth: 160,
+                                    zIndex: 999,
+                                }}>
+                                    <TouchableOpacity
+                                        style={{
+                                            flexDirection: 'row',
+                                            alignItems: 'center',
+                                            padding: 14,
+                                            borderRadius: 12,
+                                        }}
+                                        onPress={(e) => {
+                                            e.stopPropagation();
+                                            setShowMenu(false);
+                                            onDelete(member._id, member.name);
+                                        }}
+                                    >
+                                        <View style={{
+                                            backgroundColor: '#fee2e2',
+                                            padding: 8,
+                                            borderRadius: 8,
+                                            marginRight: 12
+                                        }}>
+                                            <Trash2 size={18} color="#dc2626" />
+                                        </View>
+                                        <Text style={{ color: '#dc2626', fontSize: 15, fontWeight: '600' }}>
+                                            Delete Member
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
+                            )}
+                        </View>
                     </View>
                 </LinearGradient>
 
@@ -144,7 +196,7 @@ export default function MembersPage() {
         let url = process.env.EXPO_PUBLIC_API_URL;
         if (!url) {
             if (Platform.OS === 'android') {
-                url = 'http://192.168.1.46:5001/api'; // Your computer's IP
+                url = 'http://192.168.1.46:5001/api';
             } else if (Platform.OS === 'ios') {
                 url = 'http://localhost:5001/api';
             } else {
@@ -154,12 +206,10 @@ export default function MembersPage() {
             url = `${url}/api`;
         }
 
-        // Replace localhost with actual IP for Android
         if (Platform.OS === 'android') {
             if (url.includes('localhost')) url = url.replace('localhost', '192.168.1.46');
             if (url.includes('127.0.0.1')) url = url.replace('127.0.0.1', '192.168.1.46');
             if (url.includes('10.0.2.2')) url = url.replace('10.0.2.2', '192.168.1.46');
-            // Fix port if needed
             if (url.includes(':5000')) url = url.replace(':5000', ':5001');
         }
         return url;
@@ -182,6 +232,66 @@ export default function MembersPage() {
             console.error('Error fetching members:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const deleteMember = async (memberId: string, memberName: string) => {
+        const confirmDelete = () => {
+            return new Promise<boolean>((resolve) => {
+                if (Platform.OS === 'web') {
+                    resolve(window.confirm(`Are you sure you want to delete "${memberName}"?\n\nThis action cannot be undone.`));
+                } else {
+                    Alert.alert(
+                        '⚠️ Delete Member',
+                        `Are you sure you want to delete "${memberName}"?\n\nThis action cannot be undone.`,
+                        [
+                            { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+                            { text: 'Delete', style: 'destructive', onPress: () => resolve(true) }
+                        ]
+                    );
+                }
+            });
+        };
+
+        const confirmed = await confirmDelete();
+        if (!confirmed) return;
+
+        try {
+            const token = await AsyncStorage.getItem('adminToken');
+            const url = getApiUrl();
+
+            const response = await fetch(`${url}/admin/delete-member/${memberId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const successMsg = 'Member deleted successfully';
+                if (Platform.OS === 'web') {
+                    alert('✅ ' + successMsg);
+                } else {
+                    Alert.alert('✅ Success', successMsg);
+                }
+                fetchMembers();
+            } else {
+                const errorMsg = 'Failed to delete member';
+                if (Platform.OS === 'web') {
+                    alert('❌ ' + errorMsg);
+                } else {
+                    Alert.alert('❌ Error', errorMsg);
+                }
+            }
+        } catch (error) {
+            console.error('Error deleting member:', error);
+            const errorMsg = 'Network error. Please try again.';
+            if (Platform.OS === 'web') {
+                alert('❌ ' + errorMsg);
+            } else {
+                Alert.alert('❌ Error', errorMsg);
+            }
         }
     };
 
@@ -255,7 +365,7 @@ export default function MembersPage() {
                     <View className="flex-row flex-wrap -mx-2">
                         {filteredMembers.map((member) => (
                             <View key={member._id} className="w-full md:w-1/2 lg:w-1/3 p-2">
-                                <MemberCard member={member} />
+                                <MemberCard member={member} onDelete={deleteMember} />
                             </View>
                         ))}
                     </View>
