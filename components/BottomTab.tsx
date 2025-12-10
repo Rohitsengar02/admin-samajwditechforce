@@ -19,6 +19,7 @@ import {
     Newspaper,
     UserCheck,
     BellRing,
+    Inbox,
     LucideIcon
 } from 'lucide-react-native';
 
@@ -56,6 +57,7 @@ const CAROUSEL_ITEMS: MenuItem[] = [
     { name: 'Resources', icon: FileText, path: '/(admin)/resources', gradient: ['#EC4899', '#DB2777'] },
     { name: 'Communication', icon: MessageSquare, path: '/(admin)/communication', gradient: ['#10b981', '#059669'] },
     { name: 'Election', icon: Vote, path: '/(admin)/election', gradient: ['#EF4444', '#DC2626'] },
+    { name: 'Feedback', icon: Inbox, path: '/(admin)/feedback', gradient: ['#8B5CF6', '#7C3AED'] },
     { name: 'Settings', icon: Settings, path: '/(admin)/settings', gradient: ['#64748B', '#475569'] },
 ];
 

@@ -4,15 +4,8 @@ import { useRouter, Link } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-// Platform-aware API URL
-const getApiUrl = () => {
-    let url = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5001/api';
-    // Ensure URL ends with /api
-    if (!url.endsWith('/api')) {
-        url += '/api';
-    }
-    return url;
-};
+// Import the centralized API util
+import { getApiUrl } from '../utils/api';
 
 const API_URL = getApiUrl();
 

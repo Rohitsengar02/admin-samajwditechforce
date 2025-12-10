@@ -7,16 +7,24 @@ import { Platform } from 'react-native';
  * - Android/iOS Physical Device: Uses network IP from env
  */
 export const getApiUrl = (): string => {
-    let baseUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5001/api';
-
-    // For Android emulator, localhost doesn't work - need to use 10.0.2.2
-    if (Platform.OS === 'android' && baseUrl.includes('localhost')) {
-        baseUrl = baseUrl.replace('localhost', '10.0.2.2');
+    // 1. If explicitly set in env, use it
+    if (process.env.EXPO_PUBLIC_API_URL) {
+        let baseUrl = process.env.EXPO_PUBLIC_API_URL;
+        if (!baseUrl.endsWith('/api')) baseUrl += '/api';
+        return baseUrl;
     }
 
-    // Ensure it ends with /api
-    if (!baseUrl.endsWith('/api')) {
-        baseUrl = `${baseUrl}/api`;
+    // 2. In Production (Builds), default to hosted URL
+    if (!__DEV__) {
+        return 'https://api-samajwaditechforce.onrender.com/api';
+    }
+
+    // 3. Development Fallback
+    let baseUrl = 'http://localhost:5001/api';
+
+    // For Android emulator
+    if (Platform.OS === 'android' && baseUrl.includes('localhost')) {
+        baseUrl = baseUrl.replace('localhost', '10.0.2.2');
     }
 
     console.log(`[API] Using URL: ${baseUrl} (Platform: ${Platform.OS})`);

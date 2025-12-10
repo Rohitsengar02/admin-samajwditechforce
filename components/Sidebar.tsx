@@ -23,7 +23,8 @@ import {
     UserCheck,
     Film,
     Home,
-    BellRing
+    BellRing,
+    Inbox
 } from 'lucide-react-native';
 
 interface MenuItem {
@@ -51,6 +52,7 @@ const MENU_ITEMS: MenuItem[] = [
     { name: 'Resources', icon: FileText, path: '/(admin)/resources', gradient: ['#EC4899', '#DB2777'], iconColor: '#EC4899' },
     { name: 'Communication', icon: MessageSquare, path: '/(admin)/communication', gradient: ['#10b981', '#059669'], iconColor: '#10b981' },
     { name: 'Election Mode', icon: Vote, path: '/(admin)/election', gradient: ['#EF4444', '#DC2626'], iconColor: '#EF4444' },
+    { name: 'Feedback', icon: Inbox, path: '/(admin)/feedback', gradient: ['#8B5CF6', '#7C3AED'], iconColor: '#8B5CF6' },
     { name: 'Settings', icon: Settings, path: '/(admin)/settings', gradient: ['#64748B', '#475569'], iconColor: '#64748B' },
 ];
 

@@ -15,14 +15,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.samajwaditechforce.admin"
+      "bundleIdentifier": "com.samajwaditechforce.admin2"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#E30512"
       },
-      "package": "com.samajwaditechforce.admin",
+      "package": "com.samajwaditechforce.admin2",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "usesCleartextTraffic": true
@@ -41,9 +41,8 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "e77d5fc2-6d6d-43d5-88a6-c11439076899"
+        "projectId": "075252db-6dec-433f-b310-f79ea10f5cb1"
       }
-    },
-    "owner": "ironman22"
+    }
   }
 }

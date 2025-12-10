@@ -30,7 +30,7 @@ export default function AdminLayout() {
 
     // Mobile: Show content with BottomTab
     return (
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, paddingTop: Platform.OS !== 'web' ? 30 : 0, paddingBottom: Platform.OS !== 'web' ? 70 : 0 }}>
             <Slot />
             <BottomTab />
         </View>
