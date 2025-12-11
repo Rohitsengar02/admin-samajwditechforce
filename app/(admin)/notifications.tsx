@@ -7,6 +7,7 @@ import {
     StyleSheet,
     Platform,
     RefreshControl,
+    ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -156,7 +157,12 @@ export default function AdminNotificationsPage() {
                 }
             >
                 <View style={styles.notificationsList}>
-                    {notifications.length > 0 ? (
+                    {loading && notifications.length === 0 ? (
+                        <View style={{ paddingTop: 40, alignItems: 'center' }}>
+                            <ActivityIndicator size="large" color={SP_RED} />
+                            <Text style={{ marginTop: 12, color: '#64748b' }}>Loading submissions...</Text>
+                        </View>
+                    ) : notifications.length > 0 ? (
                         notifications.map((notification, idx) => (
                             <TouchableOpacity
                                 key={notification.id || idx}

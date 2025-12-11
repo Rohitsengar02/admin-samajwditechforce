@@ -3,7 +3,9 @@ import { View, Text, StyleSheet, FlatList, ActivityIndicator, RefreshControl, To
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5001/api';
+import { getApiUrl } from '../../utils/api';
+
+const API_URL = getApiUrl();
 
 interface AdminUser {
     _id: string;
@@ -206,7 +208,7 @@ export default function MasterAdminDashboard() {
 
             <View style={styles.statsContainer}>
                 <View style={styles.statCard}>
-                    <Text style={styles.statValue}>{admins.length}</Text>
+                    <Text style={styles.statValue}>{loading ? '...' : admins.length}</Text>
                     <Text style={styles.statLabel}>Active Admins</Text>
                 </View>
                 {/* Add more stats if needed */}
@@ -214,8 +216,11 @@ export default function MasterAdminDashboard() {
 
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Approved Admins</Text>
-                {loading ? (
-                    <ActivityIndicator size="large" color="#E30512" />
+                {loading && !refreshing && admins.length === 0 ? (
+                    <View style={{ paddingTop: 40, alignItems: 'center' }}>
+                        <ActivityIndicator size="large" color="#E30512" />
+                        <Text style={{ marginTop: 12, color: '#64748b' }}>Loading admins...</Text>
+                    </View>
                 ) : (
                     <FlatList
                         data={admins}

@@ -254,8 +254,7 @@ export default function DistrictsPage() {
             <View className="px-4">
                 {/* Stats Overview */}
                 <View className="flex-row flex-wrap -mx-2 mb-6">
-                    <StatCard icon={MapPin} label="Total Districts" value={districts.length} color={['#6366f1', '#8b5cf6']} bgColor="bg-white/20" />
-
+                    <StatCard icon={MapPin} label="Total Districts" value={loading ? "..." : districts.length} color={['#6366f1', '#8b5cf6']} bgColor="bg-white/20" />
                 </View>
 
                 {/* District List */}

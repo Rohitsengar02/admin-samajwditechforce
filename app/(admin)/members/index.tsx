@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, Image, Dimensions, Platform, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, Image, Dimensions, Platform, ActivityIndicator, Alert, RefreshControl } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import {
@@ -7,6 +7,7 @@ import {
     Award, MessageCircle, MoreVertical, Users, TrendingUp, Star, Trash2
 } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getApiUrl } from '../../../utils/api';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -192,29 +193,6 @@ export default function MembersPage() {
         fetchMembers();
     }, []);
 
-    const getApiUrl = () => {
-        let url = process.env.EXPO_PUBLIC_API_URL;
-        if (!url) {
-            if (Platform.OS === 'android') {
-                url = 'http://192.168.1.46:5001/api';
-            } else if (Platform.OS === 'ios') {
-                url = 'http://localhost:5001/api';
-            } else {
-                url = 'http://localhost:5001/api';
-            }
-        } else if (!url.endsWith('/api')) {
-            url = `${url}/api`;
-        }
-
-        if (Platform.OS === 'android') {
-            if (url.includes('localhost')) url = url.replace('localhost', '192.168.1.46');
-            if (url.includes('127.0.0.1')) url = url.replace('127.0.0.1', '192.168.1.46');
-            if (url.includes('10.0.2.2')) url = url.replace('10.0.2.2', '192.168.1.46');
-            if (url.includes(':5000')) url = url.replace(':5000', ':5001');
-        }
-        return url;
-    };
-
     const fetchMembers = async () => {
         try {
             const token = await AsyncStorage.getItem('adminToken');
@@ -301,16 +279,19 @@ export default function MembersPage() {
         m.vidhanSabha?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    if (loading) {
-        return (
-            <View className="flex-1 justify-center items-center bg-gray-50">
-                <ActivityIndicator size="large" color="#4F46E5" />
-            </View>
-        );
-    }
+    const onRefresh = React.useCallback(() => {
+        setLoading(true);
+        fetchMembers();
+    }, []);
 
     return (
-        <ScrollView className="flex-1 bg-gray-50" showsVerticalScrollIndicator={false}>
+        <ScrollView
+            className="flex-1 bg-gray-50"
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+                <RefreshControl refreshing={loading} onRefresh={onRefresh} colors={['#4F46E5']} />
+            }
+        >
             <View className="relative overflow-hidden mb-6">
                 <LinearGradient colors={['#4F46E5', '#7C3AED']} className="pt-8 pb-12 px-6 rounded-b-[40px]">
                     <AnimatedBubble size={120} top={-30} left={screenWidth - 100} />
@@ -348,27 +329,40 @@ export default function MembersPage() {
 
             <View className="px-4">
                 <View className="flex-row flex-wrap -mx-2 mb-6">
-                    <StatCard icon={Users} label="Total Verified" value={members.length.toString()} color={['#6366f1', '#8b5cf6']} bgColor="bg-white/20" />
+                    <StatCard
+                        icon={Users}
+                        label="Total Verified"
+                        value={loading ? "..." : members.length.toString()}
+                        color={['#6366f1', '#8b5cf6']}
+                        bgColor="bg-white/20"
+                    />
                     <StatCard icon={TrendingUp} label="Active Today" value="0" color={['#10b981', '#059669']} bgColor="bg-white/20" />
                     <StatCard icon={Award} label="Avg Score" value="-" color={['#f59e0b', '#ef4444']} bgColor="bg-white/20" />
                 </View>
 
                 <View className="mb-6">
                     <View className="flex-row justify-between items-center mb-4 px-2">
-                        <Text className="text-lg font-bold text-gray-800">All Members ({filteredMembers.length})</Text>
+                        <Text className="text-lg font-bold text-gray-800">All Members ({loading ? "..." : filteredMembers.length})</Text>
                         <TouchableOpacity className="flex-row items-center">
                             <Text className="text-indigo-600 text-sm font-medium mr-1">Sort by</Text>
                             <Filter size={14} color="#6366f1" />
                         </TouchableOpacity>
                     </View>
 
-                    <View className="flex-row flex-wrap -mx-2">
-                        {filteredMembers.map((member) => (
-                            <View key={member._id} className="w-full md:w-1/2 lg:w-1/3 p-2">
-                                <MemberCard member={member} onDelete={deleteMember} />
-                            </View>
-                        ))}
-                    </View>
+                    {loading && members.length === 0 ? (
+                        <View className="items-center py-10">
+                            <ActivityIndicator size="large" color="#4F46E5" />
+                            <Text className="text-gray-400 mt-4">Loading members...</Text>
+                        </View>
+                    ) : (
+                        <View className="flex-row flex-wrap -mx-2">
+                            {filteredMembers.map((member) => (
+                                <View key={member._id} className="w-full md:w-1/2 lg:w-1/3 p-2">
+                                    <MemberCard member={member} onDelete={deleteMember} />
+                                </View>
+                            ))}
+                        </View>
+                    )}
                 </View>
             </View>
         </ScrollView>

@@ -5,13 +5,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Trash2, Star, User, Phone, MapPin, Calendar, MessageSquare } from 'lucide-react-native';
 
-const getApiUrl = () => {
-    let url = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5001/api';
-    if (!url.endsWith('/api')) url += '/api';
-    return url;
-};
+import { getApiUrl } from '../../../utils/api';
 
-const API_URL = getApiUrl();
+const API_URL = getApiUrl(); // force update
 
 export default function FeedbackList() {
     const [feedbacks, setFeedbacks] = useState([]);

@@ -22,9 +22,11 @@ export const getApiUrl = (): string => {
     // 3. Development Fallback
     let baseUrl = 'http://localhost:5001/api';
 
-    // For Android emulator
+    // For Android (Emulator or Physical Device)
     if (Platform.OS === 'android' && baseUrl.includes('localhost')) {
-        baseUrl = baseUrl.replace('localhost', '10.0.2.2');
+        // Use 10.0.2.2 for Emulator, but mostly we need local IP for Physical Device
+        // defaulting to the user's current local IP
+        baseUrl = baseUrl.replace('localhost', '192.168.1.38');
     }
 
     console.log(`[API] Using URL: ${baseUrl} (Platform: ${Platform.OS})`);

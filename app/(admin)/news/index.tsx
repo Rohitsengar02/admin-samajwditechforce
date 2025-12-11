@@ -277,7 +277,7 @@ export default function NewsPage() {
                         borderLeftColor: '#22c55e',
                         elevation: 2,
                     }}>
-                        <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#111827' }}>{publishedCount}</Text>
+                        <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#111827' }}>{loading ? '...' : publishedCount}</Text>
                         <Text style={{ color: '#6b7280', fontSize: 14 }}>Published</Text>
                     </View>
                     <View style={{
@@ -290,7 +290,7 @@ export default function NewsPage() {
                         borderLeftColor: '#f59e0b',
                         elevation: 2,
                     }}>
-                        <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#111827' }}>{draftCount}</Text>
+                        <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#111827' }}>{loading ? '...' : draftCount}</Text>
                         <Text style={{ color: '#6b7280', fontSize: 14 }}>Drafts</Text>
                     </View>
                 </View>

@@ -355,14 +355,7 @@ export default function PostersPage() {
         </View>
     );
 
-    if (loading) {
-        return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={SP_RED} />
-                <Text style={styles.loadingText}>Loading posters...</Text>
-            </View>
-        );
-    }
+
 
     return (
         <View style={styles.container}>
@@ -413,7 +406,12 @@ export default function PostersPage() {
                 </View>
 
                 {/* Posters Grid */}
-                {posters.length > 0 ? (
+                {loading ? (
+                    <View style={{ paddingTop: 60, alignItems: 'center' }}>
+                        <ActivityIndicator size="large" color={SP_RED} />
+                        <Text style={{ marginTop: 12, color: '#64748B' }}>Loading posters...</Text>
+                    </View>
+                ) : posters.length > 0 ? (
                     <View style={[styles.postersGrid, isDesktop && styles.postersGridDesktop]}>
                         {posters.map((poster) => renderPosterCard({ item: poster }))}
                     </View>

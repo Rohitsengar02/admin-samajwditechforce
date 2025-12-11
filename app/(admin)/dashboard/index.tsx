@@ -185,7 +185,11 @@ const DistrictCard = ({ district }: { district: any }) => (
 
 export default function Dashboard() {
     const router = useRouter();
-    const [loading, setLoading] = useState(true);
+    // Granular loading states for Lazy Loading
+    const [loadingDistricts, setLoadingDistricts] = useState(true);
+    const [loadingPosters, setLoadingPosters] = useState(true);
+    const [loadingNews, setLoadingNews] = useState(true);
+
     const [stats, setStats] = useState({
         districts: 0,
         posters: 0,
@@ -199,30 +203,52 @@ export default function Dashboard() {
     const [districts, setDistricts] = useState<any[]>([]);
 
     useEffect(() => {
-        fetchDashboardData();
+        // Trigger fetches in parallel for faster perceived loading
+        fetchDistricts();
+        fetchPostersData();
+        fetchNewsData();
     }, []);
 
-    const fetchDashboardData = async () => {
+    const fetchDistricts = async () => {
         try {
-            setLoading(true);
-
-            // Fetch districts
             const districtsRes = await fetch(`${API_URL}/districts`);
             const districtsData = await districtsRes.json();
-            // Handle both array format and { data: [] } format
             const districtsList = Array.isArray(districtsData) ? districtsData : (districtsData.data || []);
             setDistricts(districtsList);
+            setStats(prev => ({ ...prev, districts: districtsList.length }));
+        } catch (error) {
+            console.error('Error fetching districts:', error);
+        } finally {
+            setLoadingDistricts(false);
+        }
+    };
 
-            // Fetch poster stats
-            const posterStatsRes = await fetch(`${API_URL}/posters/stats`);
-            const posterStats = await posterStatsRes.json();
+    const fetchPostersData = async () => {
+        try {
+            // Fetch stats and posters in parallel
+            const [statsRes, postersRes] = await Promise.all([
+                fetch(`${API_URL}/posters/stats`),
+                fetch(`${API_URL}/posters`)
+            ]);
 
-            // Fetch all posters
-            const postersRes = await fetch(`${API_URL}/posters`);
+            const posterStats = await statsRes.json();
             const postersData = await postersRes.json();
-            setAllPosters(postersData.posters || []);
 
-            // Fetch news
+            setAllPosters(postersData.posters || []);
+            setStats(prev => ({
+                ...prev,
+                posters: posterStats.totalPosters || 0,
+                posterDownloads: posterStats.totalDownloads || 0
+            }));
+        } catch (error) {
+            console.error('Error fetching posters:', error);
+        } finally {
+            setLoadingPosters(false);
+        }
+    };
+
+    const fetchNewsData = async () => {
+        try {
             const newsRes = await fetch(`${API_URL}/news`);
             const newsData = await newsRes.json();
             const newsList = newsData.data || [];
@@ -231,19 +257,16 @@ export default function Dashboard() {
             const publishedNews = newsList.filter((n: any) => n.status === 'Published').length;
             const draftNews = newsList.filter((n: any) => n.status === 'Draft').length;
 
-            setStats({
-                districts: districtsList.length,
-                posters: posterStats.totalPosters || 0,
-                posterDownloads: posterStats.totalDownloads || 0,
+            setStats(prev => ({
+                ...prev,
                 news: newsList.length,
                 publishedNews,
-                draftNews,
-            });
-
+                draftNews
+            }));
         } catch (error) {
-            console.error('Error fetching dashboard data:', error);
+            console.error('Error fetching news:', error);
         } finally {
-            setLoading(false);
+            setLoadingNews(false);
         }
     };
 
@@ -254,18 +277,9 @@ export default function Dashboard() {
     const listNews = allNews.slice(0, 5);
     const carouselNews = allNews.slice(5);
 
-    if (loading) {
-        return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f9fafb' }}>
-                <ActivityIndicator size="large" color="#4F46E5" />
-                <Text style={{ marginTop: 16, color: '#6b7280', fontWeight: '500' }}>Loading dashboard...</Text>
-            </View>
-        );
-    }
-
     return (
         <ScrollView style={{ flex: 1, backgroundColor: '#f9fafb' }} showsVerticalScrollIndicator={false}>
-            {/* Header */}
+            {/* Header - Loads Immediately */}
             <View style={{ position: 'relative', overflow: 'hidden' }}>
                 <LinearGradient
                     colors={['#4F46E5', '#7C3AED']}
@@ -295,15 +309,40 @@ export default function Dashboard() {
             <View style={{ padding: 16, paddingBottom: 100 }}>
                 {/* Stats Cards Row */}
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 20, marginTop: -20 }}>
-                    <StatsCard title="Districts" value={stats.districts} icon={Map} gradient={['#f59e0b', '#ef4444']} onPress={() => router.push('/(admin)/districts' as any)} />
-                    <StatsCard title="Posters" value={stats.posters} change={`⬇️${stats.posterDownloads}`} icon={ImageIcon} gradient={['#6366f1', '#8b5cf6']} onPress={() => router.push('/(admin)/posters' as any)} />
+                    <StatsCard
+                        title="Districts"
+                        value={loadingDistricts ? "..." : stats.districts}
+                        icon={Map}
+                        gradient={['#f59e0b', '#ef4444']}
+                        onPress={() => router.push('/(admin)/districts' as any)}
+                    />
+                    <StatsCard
+                        title="Posters"
+                        value={loadingPosters ? "..." : stats.posters}
+                        change={loadingPosters ? "" : `⬇️${stats.posterDownloads}`}
+                        icon={ImageIcon}
+                        gradient={['#6366f1', '#8b5cf6']}
+                        onPress={() => router.push('/(admin)/posters' as any)}
+                    />
                 </View>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 20 }}>
-                    <StatsCard title="News" value={stats.news} change={`${stats.publishedNews} Live`} icon={Newspaper} gradient={['#10b981', '#059669']} onPress={() => router.push('/(admin)/news' as any)} />
-                    <StatsCard title="Downloads" value={stats.posterDownloads} icon={TrendingUp} gradient={['#0ea5e9', '#3b82f6']} />
+                    <StatsCard
+                        title="News"
+                        value={loadingNews ? "..." : stats.news}
+                        change={loadingNews ? "" : `${stats.publishedNews} Live`}
+                        icon={Newspaper}
+                        gradient={['#10b981', '#059669']}
+                        onPress={() => router.push('/(admin)/news' as any)}
+                    />
+                    <StatsCard
+                        title="Downloads"
+                        value={loadingPosters ? "..." : stats.posterDownloads}
+                        icon={TrendingUp}
+                        gradient={['#0ea5e9', '#3b82f6']}
+                    />
                 </View>
 
-                {/* Quick Actions */}
+                {/* Quick Actions - Loads Immediately */}
                 <View style={{ backgroundColor: 'white', padding: 16, borderRadius: 20, marginBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}>
                     <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#111827', marginBottom: 12 }}>Quick Actions</Text>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
@@ -315,7 +354,12 @@ export default function Dashboard() {
                 </View>
 
                 {/* Districts Section */}
-                {districts.length > 0 && (
+                {loadingDistricts ? (
+                    <View style={{ height: 100, justifyContent: 'center', alignItems: 'center' }}>
+                        <ActivityIndicator size="small" color="#4F46E5" />
+                        <Text style={{ marginTop: 8, color: '#6b7280' }}>Loading Districts...</Text>
+                    </View>
+                ) : districts.length > 0 && (
                     <View style={{ marginBottom: 24 }}>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                             <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#111827' }}>📍 Districts</Text>
@@ -333,7 +377,12 @@ export default function Dashboard() {
                 )}
 
                 {/* Posters Section - Carousel */}
-                {allPosters.length > 0 && (
+                {loadingPosters ? (
+                    <View style={{ height: 150, justifyContent: 'center', alignItems: 'center' }}>
+                        <ActivityIndicator size="small" color="#4F46E5" />
+                        <Text style={{ marginTop: 8, color: '#6b7280' }}>Loading Posters...</Text>
+                    </View>
+                ) : allPosters.length > 0 && (
                     <View style={{ marginBottom: 24 }}>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                             <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#111827' }}>🖼️ Posters</Text>
@@ -352,7 +401,12 @@ export default function Dashboard() {
                 )}
 
                 {/* News Section */}
-                {allNews.length > 0 && (
+                {loadingNews ? (
+                    <View style={{ height: 150, justifyContent: 'center', alignItems: 'center' }}>
+                        <ActivityIndicator size="small" color="#4F46E5" />
+                        <Text style={{ marginTop: 8, color: '#6b7280' }}>Loading News...</Text>
+                    </View>
+                ) : allNews.length > 0 && (
                     <View style={{ marginBottom: 24 }}>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                             <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#111827' }}>📰 Latest News</Text>
@@ -381,7 +435,7 @@ export default function Dashboard() {
                     </View>
                 )}
 
-                {/* Stats Summary */}
+                {/* Stats Summary - Shown always, but values update */}
                 <View style={{ backgroundColor: 'white', padding: 18, borderRadius: 20, marginBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}>
                     <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#111827', marginBottom: 14 }}>📈 Summary</Text>
 
@@ -390,7 +444,7 @@ export default function Dashboard() {
                             <Map size={20} color="#4F46E5" />
                             <Text style={{ marginLeft: 10, color: '#374151', fontWeight: '600', fontSize: 14 }}>Districts</Text>
                         </View>
-                        <Text style={{ color: '#4F46E5', fontWeight: 'bold', fontSize: 18 }}>{stats.districts}</Text>
+                        <Text style={{ color: '#4F46E5', fontWeight: 'bold', fontSize: 18 }}>{loadingDistricts ? "-" : stats.districts}</Text>
                     </View>
 
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12, backgroundColor: '#f5f3ff', borderRadius: 12, marginBottom: 10 }}>
@@ -398,7 +452,7 @@ export default function Dashboard() {
                             <ImageIcon size={20} color="#8B5CF6" />
                             <Text style={{ marginLeft: 10, color: '#374151', fontWeight: '600', fontSize: 14 }}>Posters</Text>
                         </View>
-                        <Text style={{ color: '#8B5CF6', fontWeight: 'bold', fontSize: 18 }}>{stats.posters}</Text>
+                        <Text style={{ color: '#8B5CF6', fontWeight: 'bold', fontSize: 18 }}>{loadingPosters ? "-" : stats.posters}</Text>
                     </View>
 
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12, backgroundColor: '#ecfdf5', borderRadius: 12, marginBottom: 10 }}>
@@ -406,7 +460,7 @@ export default function Dashboard() {
                             <Newspaper size={20} color="#10B981" />
                             <Text style={{ marginLeft: 10, color: '#374151', fontWeight: '600', fontSize: 14 }}>Published</Text>
                         </View>
-                        <Text style={{ color: '#10B981', fontWeight: 'bold', fontSize: 18 }}>{stats.publishedNews}</Text>
+                        <Text style={{ color: '#10B981', fontWeight: 'bold', fontSize: 18 }}>{loadingNews ? "-" : stats.publishedNews}</Text>
                     </View>
 
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12, backgroundColor: '#fef3c7', borderRadius: 12 }}>
@@ -414,11 +468,11 @@ export default function Dashboard() {
                             <FileText size={20} color="#F59E0B" />
                             <Text style={{ marginLeft: 10, color: '#374151', fontWeight: '600', fontSize: 14 }}>Drafts</Text>
                         </View>
-                        <Text style={{ color: '#F59E0B', fontWeight: 'bold', fontSize: 18 }}>{stats.draftNews}</Text>
+                        <Text style={{ color: '#F59E0B', fontWeight: 'bold', fontSize: 18 }}>{loadingNews ? "-" : stats.draftNews}</Text>
                     </View>
                 </View>
 
-                {/* System Status */}
+                {/* System Status - Static */}
                 <View style={{ backgroundColor: 'white', padding: 18, borderRadius: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}>
                     <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#111827', marginBottom: 14 }}>🔧 System</Text>
 

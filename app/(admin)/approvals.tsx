@@ -123,15 +123,23 @@ export default function AdminApprovalsScreen() {
         <View style={styles.container}>
             <Text style={styles.title}>Pending Admin Requests</Text>
             {loading ? (
-                <ActivityIndicator size="large" color="#E30512" />
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
+                    <ActivityIndicator size="large" color="#E30512" />
+                    <Text style={{ marginTop: 10, color: '#666' }}>Loading requests...</Text>
+                </View>
             ) : pendingAdmins.length === 0 ? (
-                <Text style={styles.emptyText}>No pending requests.</Text>
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
+                    <MaterialCommunityIcons name="clipboard-check-outline" size={64} color="#ccc" />
+                    <Text style={styles.emptyText}>No pending requests.</Text>
+                </View>
             ) : (
                 <FlatList
                     data={pendingAdmins}
                     renderItem={renderItem}
                     keyExtractor={(item) => item._id}
                     contentContainerStyle={styles.list}
+                    refreshing={loading}
+                    onRefresh={fetchPendingAdmins}
                 />
             )}
         </View>
