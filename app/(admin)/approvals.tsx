@@ -1,118 +1,155 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, RefreshControl } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5001/api';
+import { getApiUrl } from '../../utils/api'; // Ensure this matches path
 
 export default function AdminApprovalsScreen() {
     const [pendingAdmins, setPendingAdmins] = useState<any[]>([]);
+    const [pendingMembers, setPendingMembers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
 
-    const fetchPendingAdmins = async () => {
+    const fetchData = async () => {
         setLoading(true);
         try {
             const token = await AsyncStorage.getItem('adminToken');
-            const response = await fetch(`${API_URL}/admin/pending-admins`, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-            const data = await response.json();
-            if (response.ok) {
-                setPendingAdmins(data);
-            } else {
-                Alert.alert('Error', data.message || 'Failed to fetch pending admins');
-            }
+            const url = getApiUrl();
+            const headers = { Authorization: `Bearer ${token}` };
+
+            // Fetch Pending Admins
+            const adminRes = await fetch(`${url}/admin/pending-admins`, { headers });
+            const adminData = await adminRes.json();
+            if (adminRes.ok) setPendingAdmins(adminData);
+
+            // Fetch Pending Members
+            const memberRes = await fetch(`${url}/admin/verifications`, { headers });
+            const memberData = await memberRes.json();
+            if (memberRes.ok) setPendingMembers(memberData);
+
         } catch (error) {
             console.error(error);
-            Alert.alert('Error', 'Something went wrong');
+            Alert.alert('Error', 'Failed to fetch data');
         } finally {
             setLoading(false);
+            setRefreshing(false);
         }
     };
 
-    const handleApprove = async (id: string, name: string) => {
+    const onRefresh = () => {
+        setRefreshing(true);
+        fetchData();
+    };
+
+    // --- Admin Action Handlers ---
+    const handleApproveAdmin = async (id: string, name: string) => {
         try {
             const token = await AsyncStorage.getItem('adminToken');
-            const response = await fetch(`${API_URL}/admin/approve-admin/${id}`, {
+            const url = getApiUrl();
+            const response = await fetch(`${url}/admin/approve-admin/${id}`, {
                 method: 'PUT',
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (response.ok) {
+                Alert.alert('Success', `${name} approved as Admin`);
+                fetchData();
+            } else {
+                Alert.alert('Error', 'Failed to approve');
+            }
+        } catch (e) { Alert.alert('Error', 'Network error'); }
+    };
+
+    const handleRejectAdmin = async (id: string, name: string) => {
+        Alert.alert('Reject Admin', `Reject ${name}?`, [
+            { text: 'Cancel', style: 'cancel' },
+            {
+                text: 'Reject', style: 'destructive',
+                onPress: async () => {
+                    const token = await AsyncStorage.getItem('adminToken');
+                    const url = getApiUrl();
+                    await fetch(`${url}/admin/reject-admin/${id}`, {
+                        method: 'DELETE',
+                        headers: { Authorization: `Bearer ${token}` },
+                    });
+                    fetchData();
+                }
+            }
+        ]);
+    };
+
+    // --- Member Action Handlers ---
+    const handleVerifyMember = async (id: string, name: string) => {
+        try {
+            const token = await AsyncStorage.getItem('adminToken');
+            const url = getApiUrl();
+            const response = await fetch(`${url}/admin/verify/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ mindset: 'A', whatsappGroupAdded: 'Yes' })
             });
 
             if (response.ok) {
-                Alert.alert('Success', `${name} has been approved as Admin.`);
-                fetchPendingAdmins(); // Refresh list
+                Alert.alert('Success', `Member ${name} verified!`);
+                fetchData();
             } else {
-                const data = await response.json();
-                Alert.alert('Error', data.message || 'Failed to approve admin');
+                Alert.alert('Error', 'Failed to verify member');
             }
-        } catch (error) {
-            console.error(error);
-            Alert.alert('Error', 'Something went wrong');
-        }
+        } catch (e) { Alert.alert('Error', 'Network error'); }
     };
 
-    const handleReject = async (id: string, name: string) => {
-        Alert.alert(
-            'Confirm Reject',
-            `Are you sure you want to reject ${name}?`,
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Reject',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            const token = await AsyncStorage.getItem('adminToken');
-                            const response = await fetch(`${API_URL}/admin/reject-admin/${id}`, {
-                                method: 'DELETE',
-                                headers: {
-                                    Authorization: `Bearer ${token}`,
-                                },
-                            });
-
-                            if (response.ok) {
-                                Alert.alert('Success', `${name} has been rejected.`);
-                                fetchPendingAdmins();
-                            } else {
-                                const data = await response.json();
-                                Alert.alert('Error', data.message || 'Failed to reject admin');
-                            }
-                        } catch (error) {
-                            console.error(error);
-                            Alert.alert('Error', 'Something went wrong');
-                        }
-                    }
+    const handleRejectMember = async (id: string, name: string) => {
+        Alert.alert('Reject Member', `Reject ${name}?`, [
+            { text: 'Cancel', style: 'cancel' },
+            {
+                text: 'Reject', style: 'destructive',
+                onPress: async () => {
+                    const token = await AsyncStorage.getItem('adminToken');
+                    const url = getApiUrl();
+                    await fetch(`${url}/admin/reject/${id}`, {
+                        method: 'PUT',
+                        headers: { Authorization: `Bearer ${token}` },
+                    });
+                    fetchData();
                 }
-            ]
-        );
+            }
+        ]);
     };
 
     useEffect(() => {
-        fetchPendingAdmins();
+        fetchData();
     }, []);
 
-    const renderItem = ({ item }: { item: any }) => (
-        <View style={styles.card}>
+    const renderAdminItem = (item: any) => (
+        <View key={item._id} style={styles.card}>
             <View style={styles.info}>
-                <Text style={styles.name}>{item.name}</Text>
-                <Text style={styles.email}>{item.email}</Text>
-                <Text style={styles.phone}>{item.phone}</Text>
+                <Text style={styles.name}>{item.name} (Admin Request)</Text>
+                <Text style={styles.details}>{item.email}</Text>
+                <Text style={styles.details}>{item.phone}</Text>
             </View>
             <View style={styles.actions}>
-                <TouchableOpacity
-                    style={[styles.actionButton, styles.rejectButton]}
-                    onPress={() => handleReject(item._id, item.name)}
-                >
+                <TouchableOpacity style={[styles.btn, styles.btnReject]} onPress={() => handleRejectAdmin(item._id, item.name)}>
                     <MaterialCommunityIcons name="close" size={20} color="#fff" />
                 </TouchableOpacity>
-                <TouchableOpacity
-                    style={[styles.actionButton, styles.approveButton]}
-                    onPress={() => handleApprove(item._id, item.name)}
-                >
+                <TouchableOpacity style={[styles.btn, styles.btnApprove]} onPress={() => handleApproveAdmin(item._id, item.name)}>
+                    <MaterialCommunityIcons name="check" size={20} color="#fff" />
+                </TouchableOpacity>
+            </View>
+        </View>
+    );
+
+    const renderMemberItem = (item: any) => (
+        <View key={item._id} style={styles.card}>
+            <View style={styles.info}>
+                <Text style={styles.name}>{item.name} (Member)</Text>
+                <Text style={styles.details}>Dist: {item.district} | VS: {item.vidhanSabha}</Text>
+                <Text style={styles.details}>Phone: {item.phone}</Text>
+                <Text style={styles.details}>Role: {item.partyRole || 'N/A'}</Text>
+            </View>
+            <View style={styles.actions}>
+                <TouchableOpacity style={[styles.btn, styles.btnReject]} onPress={() => handleRejectMember(item._id, item.name)}>
+                    <MaterialCommunityIcons name="close" size={20} color="#fff" />
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.btn, styles.btnApprove]} onPress={() => handleVerifyMember(item._id, item.name)}>
                     <MaterialCommunityIcons name="check" size={20} color="#fff" />
                 </TouchableOpacity>
             </View>
@@ -121,96 +158,64 @@ export default function AdminApprovalsScreen() {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Pending Admin Requests</Text>
+            <Text style={styles.headerTitle}>Approvals Management</Text>
+
             {loading ? (
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
-                    <ActivityIndicator size="large" color="#E30512" />
-                    <Text style={{ marginTop: 10, color: '#666' }}>Loading requests...</Text>
-                </View>
-            ) : pendingAdmins.length === 0 ? (
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
-                    <MaterialCommunityIcons name="clipboard-check-outline" size={64} color="#ccc" />
-                    <Text style={styles.emptyText}>No pending requests.</Text>
-                </View>
+                <ActivityIndicator size="large" color="#E30512" style={{ marginTop: 50 }} />
             ) : (
-                <FlatList
-                    data={pendingAdmins}
-                    renderItem={renderItem}
-                    keyExtractor={(item) => item._id}
-                    contentContainerStyle={styles.list}
-                    refreshing={loading}
-                    onRefresh={fetchPendingAdmins}
-                />
+                <ScrollView
+                    contentContainerStyle={styles.scrollContent}
+                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+                >
+                    {/* Admin Requests Section */}
+                    <View style={styles.section}>
+                        <View style={styles.sectionHeader}>
+                            <MaterialCommunityIcons name="account-tie" size={24} color="#E30512" />
+                            <Text style={styles.sectionTitle}>Admin Requests ({pendingAdmins.length})</Text>
+                        </View>
+                        {pendingAdmins.length === 0 ? (
+                            <Text style={styles.emptyText}>No pending admin requests</Text>
+                        ) : (
+                            pendingAdmins.map(renderAdminItem)
+                        )}
+                    </View>
+
+                    {/* Member Requests Section */}
+                    <View style={styles.section}>
+                        <View style={styles.sectionHeader}>
+                            <MaterialCommunityIcons name="account-group" size={24} color="#009933" />
+                            <Text style={styles.sectionTitle}>Member Verifications ({pendingMembers.length})</Text>
+                        </View>
+                        {pendingMembers.length === 0 ? (
+                            <Text style={styles.emptyText}>No pending member verifications</Text>
+                        ) : (
+                            pendingMembers.map(renderMemberItem)
+                        )}
+                    </View>
+                </ScrollView>
             )}
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        padding: 20,
-        backgroundColor: '#f5f5f5',
-    },
-    title: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        marginBottom: 15,
-        color: '#333',
-    },
-    list: {
-        paddingBottom: 20,
-    },
+    container: { flex: 1, backgroundColor: '#f8fafc', padding: 20 },
+    headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#1e293b', marginBottom: 20 },
+    scrollContent: { paddingBottom: 40 },
+    section: { marginBottom: 30 },
+    sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 15, gap: 10 },
+    sectionTitle: { fontSize: 18, fontWeight: '700', color: '#334155' },
     card: {
-        backgroundColor: '#fff',
-        padding: 15,
-        borderRadius: 10,
-        marginBottom: 10,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-        elevation: 2,
+        backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 12,
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5, elevation: 2
     },
-    info: {
-        flex: 1,
-    },
-    name: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#333',
-    },
-    email: {
-        fontSize: 14,
-        color: '#666',
-    },
-    phone: {
-        fontSize: 14,
-        color: '#666',
-    },
-    actions: {
-        flexDirection: 'row',
-        gap: 10,
-    },
-    actionButton: {
-        padding: 10,
-        borderRadius: 8,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    approveButton: {
-        backgroundColor: '#10B981',
-    },
-    rejectButton: {
-        backgroundColor: '#EF4444',
-    },
-    emptyText: {
-        textAlign: 'center',
-        color: '#666',
-        marginTop: 20,
-        fontSize: 16,
-    },
+    info: { flex: 1 },
+    name: { fontSize: 16, fontWeight: '700', color: '#1e293b', marginBottom: 4 },
+    details: { fontSize: 13, color: '#64748b', marginBottom: 2 },
+    actions: { flexDirection: 'row', gap: 10 },
+    btn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+    btnApprove: { backgroundColor: '#10B981' },
+    btnReject: { backgroundColor: '#EF4444' },
+    emptyText: { fontStyle: 'italic', color: '#94a3b8', marginLeft: 10 },
 });

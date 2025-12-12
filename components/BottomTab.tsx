@@ -1,5 +1,6 @@
- import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, Platform, Modal, ScrollView, Dimensions, Animated } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, usePathname } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
@@ -47,6 +48,7 @@ const BOTTOM_TABS: MenuItem[] = [
 
 // Carousel items (remaining menu items)
 const CAROUSEL_ITEMS: MenuItem[] = [
+    { name: 'All Users', icon: Users, path: '/(admin)/users', gradient: ['#4F46E5', '#4338ca'] },
     { name: 'Notifications', icon: BellRing, path: '/(admin)/notifications', gradient: ['#8b5cf6', '#7c3aed'] },
     { name: 'Approvals', icon: UserCheck, path: '/(admin)/approvals', gradient: ['#10B981', '#059669'] },
     { name: 'Verifications', icon: CheckSquare, path: '/(admin)/verifications', gradient: ['#0EA5E9', '#0284C7'] },
@@ -174,13 +176,22 @@ export default function BottomTab({ onMenuPress }: BottomTabProps) {
 
     return (
         <>
-            <View style={{ position: 'absolute', bottom: 0, width: '100%', zIndex: 40 }}>
+            <SafeAreaView
+                edges={['bottom']}
+                style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    width: '100%',
+                    zIndex: 40,
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)'
+                }}
+            >
                 {/* Glassmorphism Background */}
                 <View style={{
                     position: 'absolute',
                     bottom: 0,
                     width: '100%',
-                    height: 90,
+                    height: Platform.OS === 'web' ? 100 : 90,
                     backgroundColor: 'rgba(255, 255, 255, 0.95)',
                     borderTopLeftRadius: 30,
                     borderTopRightRadius: 30,
@@ -213,7 +224,15 @@ export default function BottomTab({ onMenuPress }: BottomTabProps) {
                 </View>
 
                 {/* Tab Items */}
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', paddingHorizontal: 16, paddingBottom: 16, height: 90 }}>
+                <View style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-end',
+                    paddingHorizontal: 16,
+                    paddingTop: 8,
+                    paddingBottom: Platform.OS === 'web' ? 20 : 16,
+                    height: Platform.OS === 'web' ? 100 : 50
+                }}>
                     {/* Left 2 Tabs */}
                     <View style={{ flexDirection: 'row', flex: 1, justifyContent: 'space-around', paddingBottom: 8 }}>
                         {BOTTOM_TABS.slice(0, 2).map((tab) => (
@@ -241,7 +260,7 @@ export default function BottomTab({ onMenuPress }: BottomTabProps) {
                         ))}
                     </View>
                 </View>
-            </View>
+            </SafeAreaView>
 
             {/* Bottom Sheet Modal with Horizontal Carousel */}
             <Modal

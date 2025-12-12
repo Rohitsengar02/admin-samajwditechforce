@@ -37,12 +37,13 @@ interface MenuItem {
 
 const MENU_ITEMS: MenuItem[] = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/(admin)/dashboard', gradient: ['#4F46E5', '#4338ca'], iconColor: '#4F46E5' },
+    { name: 'All Users', icon: Users, path: '/(admin)/users', gradient: ['#4F46E5', '#4338ca'], iconColor: '#4F46E5' },
     { name: 'Home Builder', icon: Home, path: '/(admin)/home-setup', gradient: ['#E11D48', '#BE123C'], iconColor: '#E11D48' },
     { name: 'Members', icon: Users, path: '/(admin)/members', gradient: ['#EC4899', '#DB2777'], iconColor: '#EC4899' },
     { name: 'Digital IDs', icon: CreditCard, path: '/(admin)/digital-id', gradient: ['#8B5CF6', '#7C3AED'], iconColor: '#8B5CF6' },
     { name: 'Districts', icon: Map, path: '/(admin)/districts', gradient: ['#F59E0B', '#D97706'], iconColor: '#F59E0B' },
     { name: 'Training', icon: BookOpen, path: '/(admin)/training', gradient: ['#10B981', '#059669'], iconColor: '#10B981' },
-    { name: 'Verifications', icon: Shield, path: '/(admin)/verifications', gradient: ['#059669', '#047857'], iconColor: '#059669' },
+    { name: 'Member Approvals', icon: Shield, path: '/(admin)/verifications', gradient: ['#059669', '#047857'], iconColor: '#059669' },
     { name: 'News', icon: Newspaper, path: '/(admin)/news', gradient: ['#0ea5e9', '#0284c7'], iconColor: '#0ea5e9' },
     { name: 'Notifications', icon: BellRing, path: '/(admin)/notifications', gradient: ['#8b5cf6', '#7c3aed'], iconColor: '#8b5cf6' },
     { name: 'Onboarding', icon: Smartphone, path: '/(admin)/onboarding', gradient: ['#8b5cf6', '#7c3aed'], iconColor: '#8b5cf6' },

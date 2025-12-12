@@ -349,7 +349,8 @@ export default function Dashboard() {
                         <QuickActionButton icon={Map} label="Districts" color="#eef2ff" onPress={() => router.push('/(admin)/districts' as any)} />
                         <QuickActionButton icon={ImageIcon} label="Posters" color="#f5f3ff" onPress={() => router.push('/(admin)/posters' as any)} />
                         <QuickActionButton icon={Newspaper} label="News" color="#ecfdf5" onPress={() => router.push('/(admin)/news' as any)} />
-                        <QuickActionButton icon={Settings} label="Settings" color="#f3f4f6" />
+                        <QuickActionButton icon={Settings} label="Settings" color="#ecfdf5" onPress={() => router.push('/(admin)/settings' as any)} />
+
                     </View>
                 </View>
 
