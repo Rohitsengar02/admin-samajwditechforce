@@ -141,6 +141,81 @@ const DEFAULT_CONTENT = [
             title: 'Explore Pages',
             selectedPageIds: []
         }
+    },
+    {
+        id: 'footer',
+        label: 'Footer Manager',
+        icon: Layout,
+        color: '#334155',
+        data: {
+            columns: [
+                {
+                    id: 'about_col',
+                    title: 'About Us',
+                    type: 'text',
+                    content: 'The official digital wing of Samajwadi Party, dedicated to spreading the message of development and social justice.',
+                    links: [],
+                    contact: { address: '', phone: '', email: '' },
+                    social: { facebook: '', twitter: '', instagram: '', youtube: '' }
+                },
+                {
+                    id: 'quick_links',
+                    title: 'Quick Links',
+                    type: 'links',
+                    content: '',
+                    links: [
+                        { label: 'About Us', path: '/about' },
+                        { label: 'Latest News', path: '/news' },
+                        { label: 'Join Us', path: '/joinus' },
+                        { label: 'Contact', path: '/contact' }
+                    ],
+                    contact: { address: '', phone: '', email: '' },
+                    social: { facebook: '', twitter: '', instagram: '', youtube: '' }
+                },
+                {
+                    id: 'resources',
+                    title: 'Resources',
+                    type: 'links',
+                    content: '',
+                    links: [
+                        { label: 'Posters', path: '/posters' },
+                        { label: 'ID Card', path: '/idcard' },
+                        { label: 'Daily Tasks', path: '/daily-work' },
+                        { label: 'Events', path: '/events' }
+                    ],
+                    contact: { address: '', phone: '', email: '' },
+                    social: { facebook: '', twitter: '', instagram: '', youtube: '' }
+                },
+                {
+                    id: 'contact_info',
+                    title: 'Contact Info',
+                    type: 'contact',
+                    content: '',
+                    links: [],
+                    contact: {
+                        address: 'Samajwadi Party HQ\n19, Vikramaditya Marg\nLucknow, Uttar Pradesh',
+                        phone: '',
+                        email: 'contact@samajwadiparty.in'
+                    },
+                    social: { facebook: '', twitter: '', instagram: '', youtube: '' }
+                },
+                {
+                    id: 'social_media',
+                    title: 'Follow Us',
+                    type: 'social',
+                    content: '',
+                    links: [],
+                    contact: { address: '', phone: '', email: '' },
+                    social: {
+                        facebook: 'https://facebook.com/samajwadiparty',
+                        twitter: 'https://twitter.com/samajwadiparty',
+                        instagram: 'https://instagram.com/samajwadiparty',
+                        youtube: 'https://youtube.com/samajwadiparty'
+                    }
+                }
+            ],
+            copyright: '© 2024 Samajwadi Party. All rights reserved.'
+        }
     }
 ];
 
@@ -162,8 +237,14 @@ export default function HomeManager() {
 
     const fetchHomeData = async () => {
         try {
+            // Fetch Home Content
             const res = await fetch(`${API_URL}/home-content`);
             const data = await res.json();
+
+            // Fetch Footer Content
+            const footerRes = await fetch(`${API_URL}/footer`);
+            const footerData = await footerRes.json();
+
             if (data.success && data.data) {
                 setHomeData(data.data);
                 // Map backend data to sections format
@@ -174,6 +255,8 @@ export default function HomeManager() {
                     { ...DEFAULT_CONTENT[3], data: data.data.legacy || DEFAULT_CONTENT[3].data },
                     { ...DEFAULT_CONTENT[4], data: data.data.programs || DEFAULT_CONTENT[4].data },
                     { ...DEFAULT_CONTENT[5], data: data.data.explorePages || DEFAULT_CONTENT[5].data },
+                    // Footer from dedicated API
+                    { ...DEFAULT_CONTENT[6], data: footerData.success ? footerData.data : DEFAULT_CONTENT[6].data },
                 ];
                 setSections(content);
             }
@@ -204,6 +287,7 @@ export default function HomeManager() {
             const legacySection = sections.find(s => s.id === 'legacy');
             const programsSection = sections.find(s => s.id === 'programs');
             const exploreSection = sections.find(s => s.id === 'explore');
+            const footerSection = sections.find(s => s.id === 'footer');
 
             const payload = {
                 hero: { slides: heroSection?.data?.slides || [], autoPlayInterval: 5000 },
@@ -211,7 +295,8 @@ export default function HomeManager() {
                 president: presSection?.data || {},
                 legacy: legacySection?.data || {},
                 programs: programsSection?.data || {},
-                explorePages: exploreSection?.data || {}
+                explorePages: exploreSection?.data || {},
+                footer: footerSection?.data || {}
             };
 
             const res = await fetch(`${API_URL}/home-content`, {
@@ -221,7 +306,7 @@ export default function HomeManager() {
             });
             const result = await res.json();
             if (result.success) {
-                Alert.alert('Success', 'Home page content saved successfully!');
+                Alert.alert('Success', `Home page content saved successfully! (Footer Active: ${result.data?.footer?.description ? 'Yes' : 'No'})`);
             } else {
                 Alert.alert('Error', result.message || 'Failed to save');
             }
@@ -248,34 +333,52 @@ export default function HomeManager() {
         // Immediately save to database
         setLoading(true);
         try {
-            const heroSection = updatedSections.find(s => s.id === 'hero');
-            const trackSection = updatedSections.find(s => s.id === 'track_record');
-            const presSection = updatedSections.find(s => s.id === 'president');
-            const legacySection = updatedSections.find(s => s.id === 'legacy');
-            const programsSection = updatedSections.find(s => s.id === 'programs');
-            const exploreSection = updatedSections.find(s => s.id === 'explore');
+            const editedSectionId = updatedSections.find(s => s.id === activeSection.id)?.id;
 
-            const payload = {
-                hero: { slides: heroSection?.data?.slides || [], autoPlayInterval: 5000 },
-                trackRecord: trackSection?.data || {},
-                president: presSection?.data || {},
-                legacy: legacySection?.data || {},
-                programs: programsSection?.data || {},
-                explorePages: exploreSection?.data || {}
-            };
-
-            console.log('Saving payload:', JSON.stringify(payload, null, 2));
-
-            const res = await fetch(`${API_URL}/home-content`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            const result = await res.json();
-            if (result.success) {
-                Alert.alert('Success', 'Changes saved to database!');
+            // Route to appropriate API based on section
+            if (editedSectionId === 'footer') {
+                // Save Footer to dedicated API
+                const footerData = updatedSections.find(s => s.id === 'footer')?.data;
+                const res = await fetch(`${API_URL}/footer`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(footerData)
+                });
+                const result = await res.json();
+                if (result.success) {
+                    Alert.alert('Success', 'Footer saved successfully!');
+                } else {
+                    Alert.alert('Error', result.message || 'Failed to save footer');
+                }
             } else {
-                Alert.alert('Error', result.message || 'Failed to save');
+                // Save Home Content
+                const heroSection = updatedSections.find(s => s.id === 'hero');
+                const trackSection = updatedSections.find(s => s.id === 'track_record');
+                const presSection = updatedSections.find(s => s.id === 'president');
+                const legacySection = updatedSections.find(s => s.id === 'legacy');
+                const programsSection = updatedSections.find(s => s.id === 'programs');
+                const exploreSection = updatedSections.find(s => s.id === 'explore');
+
+                const payload = {
+                    hero: { slides: heroSection?.data?.slides || [], autoPlayInterval: 5000 },
+                    trackRecord: trackSection?.data || {},
+                    president: presSection?.data || {},
+                    legacy: legacySection?.data || {},
+                    programs: programsSection?.data || {},
+                    explorePages: exploreSection?.data || {}
+                };
+
+                const res = await fetch(`${API_URL}/home-content`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await res.json();
+                if (result.success) {
+                    Alert.alert('Success', 'Content saved successfully!');
+                } else {
+                    Alert.alert('Error', result.message || 'Failed to save');
+                }
             }
         } catch (e) {
             console.error('Save error:', e);
@@ -1001,6 +1104,261 @@ export default function HomeManager() {
                                         />
                                     </View>
                                 ))}
+                            </>
+                        )}
+
+                        {/* Footer Section Editor */}
+                        {id === 'footer' && (
+                            <>
+                                <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 16, color: '#059669' }}>Footer Columns Manager</Text>
+                                <Text style={{ fontSize: 14, marginBottom: 20, color: '#666' }}>
+                                    The footer is organized into flexible columns. Each column has a type (text, links, contact, or social).
+                                </Text>
+
+                                {(editData.columns || []).map((column: any, colIndex: number) => (
+                                    <View key={column.id || colIndex} style={{ marginBottom: 24, padding: 16, backgroundColor: '#f8fafc', borderRadius: 12, borderWidth: 1, borderColor: '#cbd5e1' }}>
+                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
+                                            <Text style={{ fontWeight: 'bold', fontSize: 16, color: '#1e293b' }}>
+                                                {column.title || `Column ${colIndex + 1}`} ({column.type})
+                                            </Text>
+                                            <TouchableOpacity onPress={() => {
+                                                const newCols = [...editData.columns];
+                                                newCols.splice(colIndex, 1);
+                                                updateEditField('columns', newCols);
+                                            }}>
+                                                <Trash2 color="#EF4444" size={20} />
+                                            </TouchableOpacity>
+                                        </View>
+
+                                        <Text style={styles.label}>Column Title</Text>
+                                        <TextInput
+                                            style={styles.input}
+                                            value={column.title}
+                                            onChangeText={(t) => {
+                                                const newCols = [...editData.columns];
+                                                newCols[colIndex] = { ...newCols[colIndex], title: t };
+                                                updateEditField('columns', newCols);
+                                            }}
+                                            placeholder="Column Title"
+                                        />
+
+                                        {/* TEXT TYPE */}
+                                        {column.type === 'text' && (
+                                            <>
+                                                <Text style={styles.label}>Content</Text>
+                                                <TextInput
+                                                    style={[styles.input, { height: 80 }]}
+                                                    multiline
+                                                    value={column.content}
+                                                    onChangeText={(t) => {
+                                                        const newCols = [...editData.columns];
+                                                        newCols[colIndex] = { ...newCols[colIndex], content: t };
+                                                        updateEditField('columns', newCols);
+                                                    }}
+                                                    placeholder="Text content..."
+                                                />
+                                            </>
+                                        )}
+
+                                        {/* LINKS TYPE */}
+                                        {column.type === 'links' && (
+                                            <>
+                                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, marginBottom: 8 }}>
+                                                    <Text style={{ fontSize: 14, fontWeight: '600' }}>Links ({column.links?.length || 0})</Text>
+                                                    <TouchableOpacity
+                                                        style={{ backgroundColor: '#059669', padding: 6, borderRadius: 4 }}
+                                                        onPress={() => {
+                                                            const newCols = [...editData.columns];
+                                                            newCols[colIndex] = {
+                                                                ...newCols[colIndex],
+                                                                links: [...(newCols[colIndex].links || []), { label: 'New Link', path: '/' }]
+                                                            };
+                                                            updateEditField('columns', newCols);
+                                                        }}>
+                                                        <Plus color="#fff" size={14} />
+                                                    </TouchableOpacity>
+                                                </View>
+                                                {(column.links || []).map((link: any, linkIdx: number) => (
+                                                    <View key={linkIdx} style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+                                                        <TextInput
+                                                            style={[styles.input, { flex: 1, padding: 8 }]}
+                                                            value={link.label}
+                                                            onChangeText={(t) => {
+                                                                const newCols = [...editData.columns];
+                                                                const newLinks = [...newCols[colIndex].links];
+                                                                newLinks[linkIdx] = { ...newLinks[linkIdx], label: t };
+                                                                newCols[colIndex] = { ...newCols[colIndex], links: newLinks };
+                                                                updateEditField('columns', newCols);
+                                                            }}
+                                                            placeholder="Label"
+                                                        />
+                                                        <TextInput
+                                                            style={[styles.input, { flex: 1, padding: 8 }]}
+                                                            value={link.path}
+                                                            onChangeText={(t) => {
+                                                                const newCols = [...editData.columns];
+                                                                const newLinks = [...newCols[colIndex].links];
+                                                                newLinks[linkIdx] = { ...newLinks[linkIdx], path: t };
+                                                                newCols[colIndex] = { ...newCols[colIndex], links: newLinks };
+                                                                updateEditField('columns', newCols);
+                                                            }}
+                                                            placeholder="Path"
+                                                        />
+                                                        <TouchableOpacity onPress={() => {
+                                                            const newCols = [...editData.columns];
+                                                            const newLinks = [...newCols[colIndex].links];
+                                                            newLinks.splice(linkIdx, 1);
+                                                            newCols[colIndex] = { ...newCols[colIndex], links: newLinks };
+                                                            updateEditField('columns', newCols);
+                                                        }}>
+                                                            <Trash2 color="#EF4444" size={18} />
+                                                        </TouchableOpacity>
+                                                    </View>
+                                                ))}
+                                            </>
+                                        )}
+
+                                        {/* CONTACT TYPE */}
+                                        {column.type === 'contact' && (
+                                            <>
+                                                <Text style={styles.label}>Address</Text>
+                                                <TextInput
+                                                    style={[styles.input, { height: 60 }]}
+                                                    multiline
+                                                    value={column.contact?.address}
+                                                    onChangeText={(t) => {
+                                                        const newCols = [...editData.columns];
+                                                        newCols[colIndex] = {
+                                                            ...newCols[colIndex],
+                                                            contact: { ...newCols[colIndex].contact, address: t }
+                                                        };
+                                                        updateEditField('columns', newCols);
+                                                    }}
+                                                    placeholder="Full Address"
+                                                />
+                                                <Text style={styles.label}>Phone</Text>
+                                                <TextInput
+                                                    style={styles.input}
+                                                    value={column.contact?.phone}
+                                                    onChangeText={(t) => {
+                                                        const newCols = [...editData.columns];
+                                                        newCols[colIndex] = {
+                                                            ...newCols[colIndex],
+                                                            contact: { ...newCols[colIndex].contact, phone: t }
+                                                        };
+                                                        updateEditField('columns', newCols);
+                                                    }}
+                                                    placeholder="+91 1234567890"
+                                                />
+                                                <Text style={styles.label}>Email</Text>
+                                                <TextInput
+                                                    style={styles.input}
+                                                    value={column.contact?.email}
+                                                    onChangeText={(t) => {
+                                                        const newCols = [...editData.columns];
+                                                        newCols[colIndex] = {
+                                                            ...newCols[colIndex],
+                                                            contact: { ...newCols[colIndex].contact, email: t }
+                                                        };
+                                                        updateEditField('columns', newCols);
+                                                    }}
+                                                    placeholder="email@example.com"
+                                                />
+                                            </>
+                                        )}
+
+                                        {/* SOCIAL TYPE */}
+                                        {column.type === 'social' && (
+                                            <>
+                                                <Text style={styles.label}>Facebook URL</Text>
+                                                <TextInput
+                                                    style={styles.input}
+                                                    value={column.social?.facebook}
+                                                    onChangeText={(t) => {
+                                                        const newCols = [...editData.columns];
+                                                        newCols[colIndex] = {
+                                                            ...newCols[colIndex],
+                                                            social: { ...newCols[colIndex].social, facebook: t }
+                                                        };
+                                                        updateEditField('columns', newCols);
+                                                    }}
+                                                    placeholder="https://facebook.com/..."
+                                                />
+                                                <Text style={styles.label}>Twitter URL</Text>
+                                                <TextInput
+                                                    style={styles.input}
+                                                    value={column.social?.twitter}
+                                                    onChangeText={(t) => {
+                                                        const newCols = [...editData.columns];
+                                                        newCols[colIndex] = {
+                                                            ...newCols[colIndex],
+                                                            social: { ...newCols[colIndex].social, twitter: t }
+                                                        };
+                                                        updateEditField('columns', newCols);
+                                                    }}
+                                                    placeholder="https://twitter.com/..."
+                                                />
+                                                <Text style={styles.label}>Instagram URL</Text>
+                                                <TextInput
+                                                    style={styles.input}
+                                                    value={column.social?.instagram}
+                                                    onChangeText={(t) => {
+                                                        const newCols = [...editData.columns];
+                                                        newCols[colIndex] = {
+                                                            ...newCols[colIndex],
+                                                            social: { ...newCols[colIndex].social, instagram: t }
+                                                        };
+                                                        updateEditField('columns', newCols);
+                                                    }}
+                                                    placeholder="https://instagram.com/..."
+                                                />
+                                                <Text style={styles.label}>YouTube URL</Text>
+                                                <TextInput
+                                                    style={styles.input}
+                                                    value={column.social?.youtube}
+                                                    onChangeText={(t) => {
+                                                        const newCols = [...editData.columns];
+                                                        newCols[colIndex] = {
+                                                            ...newCols[colIndex],
+                                                            social: { ...newCols[colIndex].social, youtube: t }
+                                                        };
+                                                        updateEditField('columns', newCols);
+                                                    }}
+                                                    placeholder="https://youtube.com/..."
+                                                />
+                                            </>
+                                        )}
+                                    </View>
+                                ))}
+
+                                <TouchableOpacity
+                                    style={{ backgroundColor: '#059669', padding: 12, borderRadius: 8, alignItems: 'center', marginBottom: 20 }}
+                                    onPress={() => {
+                                        updateEditField('columns', [
+                                            ...(editData.columns || []),
+                                            {
+                                                id: `col_${Date.now()}`,
+                                                title: 'New Column',
+                                                type: 'text',
+                                                content: '',
+                                                links: [],
+                                                contact: { address: '', phone: '', email: '' },
+                                                social: { facebook: '', twitter: '', instagram: '', youtube: '' }
+                                            }
+                                        ]);
+                                    }}>
+                                    <Text style={{ color: '#fff', fontWeight: 'bold' }}>+ Add Column</Text>
+                                </TouchableOpacity>
+
+                                <View style={{ height: 2, backgroundColor: '#eee', marginVertical: 24 }} />
+
+                                <Text style={styles.label}>Copyright Text</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    value={editData.copyright}
+                                    onChangeText={(t) => updateEditField('copyright', t)}
+                                    placeholder="© 2024 Samajwadi Party. All rights reserved."
+                                />
                             </>
                         )}
 

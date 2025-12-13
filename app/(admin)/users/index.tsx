@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, Image, Alert, Modal, TextInput, ScrollView, Platform } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -11,7 +11,7 @@ const SP_GREEN = '#009933';
 
 export default function UsersScreen() {
     const router = useRouter();
-    const [users, setUsers] = useState([]);
+    const [users, setUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
@@ -60,6 +60,16 @@ export default function UsersScreen() {
         setRefreshing(true);
         fetchUsers();
     };
+
+    const stats = useMemo(() => {
+        return {
+            total: users.length,
+            verified: users.filter(u => u.verificationStatus === 'Verified').length,
+            pending: users.filter(u => u.verificationStatus === 'Pending').length,
+            appUsers: users.filter(u => !u.isVolunteer).length,
+            volunteers: users.filter(u => u.isVolunteer).length
+        };
+    }, [users]);
 
     const handleDelete = (item: any) => {
         const type = item.isVolunteer ? 'volunteer' : 'user';
@@ -150,6 +160,48 @@ export default function UsersScreen() {
         }
     };
 
+    const renderHeader = () => (
+        <View style={styles.statsContainer}>
+            <View style={styles.statsGrid}>
+                {/* Total Users */}
+                <LinearGradient colors={['#3b82f6', '#2563eb']} style={styles.statCard}>
+                    <View style={styles.statIconContainer}>
+                        <MaterialCommunityIcons name="account-group" size={20} color="white" />
+                    </View>
+                    <Text style={styles.statNumber}>{stats.total}</Text>
+                    <Text style={styles.statLabel}>Total Users</Text>
+                </LinearGradient>
+
+                {/* Verified Users */}
+                <LinearGradient colors={['#10b981', '#059669']} style={styles.statCard}>
+                    <View style={styles.statIconContainer}>
+                        <MaterialCommunityIcons name="check-decagram" size={20} color="white" />
+                    </View>
+                    <Text style={styles.statNumber}>{stats.verified}</Text>
+                    <Text style={styles.statLabel}>Verified</Text>
+                </LinearGradient>
+
+                {/* Pending Verification */}
+                <LinearGradient colors={['#f59e0b', '#d97706']} style={styles.statCard}>
+                    <View style={styles.statIconContainer}>
+                        <MaterialCommunityIcons name="clock-outline" size={20} color="white" />
+                    </View>
+                    <Text style={styles.statNumber}>{stats.pending}</Text>
+                    <Text style={styles.statLabel}>Pending</Text>
+                </LinearGradient>
+
+                {/* App Users */}
+                <LinearGradient colors={['#8b5cf6', '#7c3aed']} style={styles.statCard}>
+                    <View style={styles.statIconContainer}>
+                        <MaterialCommunityIcons name="cellphone" size={20} color="white" />
+                    </View>
+                    <Text style={styles.statNumber}>{stats.appUsers}</Text>
+                    <Text style={styles.statLabel}>App Users</Text>
+                </LinearGradient>
+            </View>
+        </View>
+    );
+
     const renderUserItem = ({ item }: { item: any }) => (
         <View style={styles.userCard}>
             <View style={styles.userInfo}>
@@ -238,6 +290,7 @@ export default function UsersScreen() {
                     renderItem={renderUserItem}
                     keyExtractor={(item) => item._id}
                     contentContainerStyle={styles.listContent}
+                    ListHeaderComponent={renderHeader}
                     refreshControl={
                         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[SP_RED]} />
                     }
@@ -346,6 +399,48 @@ const styles = StyleSheet.create({
         padding: 16,
         paddingBottom: 40,
     },
+    // Stats Styles
+    statsContainer: {
+        marginBottom: 20,
+    },
+    statsGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 12,
+    },
+    statCard: {
+        width: '48%', // Allow wrap into 2 columns
+        padding: 16,
+        borderRadius: 16,
+        elevation: 3,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        minHeight: 110,
+        justifyContent: 'space-between'
+    },
+    statIconContainer: {
+        width: 32,
+        height: 32,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        borderRadius: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 8,
+    },
+    statNumber: {
+        fontSize: 28,
+        fontWeight: 'bold',
+        color: 'white',
+    },
+    statLabel: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: 'rgba(255,255,255,0.9)',
+    },
+
+    // User Card Styles (Same as before)
     userCard: {
         backgroundColor: '#fff',
         borderRadius: 16,
