@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Dimensions, Image, TextInput, ActivityIndicator, Alert, Platform } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Dimensions, Image, TextInput, ActivityIndicator, Alert, Platform, Modal } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
@@ -37,14 +37,29 @@ const NewsCard = ({ news, router, onDelete }: any) => (
                 position: 'absolute',
                 top: 12,
                 right: 12,
-                paddingHorizontal: 12,
-                paddingVertical: 6,
-                borderRadius: 20,
-                backgroundColor: news.status === 'Published' ? '#22c55e' : '#f59e0b',
+                flexDirection: 'row',
+                gap: 8,
             }}>
-                <Text style={{ color: 'white', fontSize: 11, fontWeight: 'bold' }}>
-                    {news.status}
-                </Text>
+                <View style={{
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderRadius: 20,
+                    backgroundColor: 'rgba(0,0,0,0.6)',
+                }}>
+                    <Text style={{ color: 'white', fontSize: 11, fontWeight: 'bold' }}>
+                        {news.type || 'News'}
+                    </Text>
+                </View>
+                <View style={{
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderRadius: 20,
+                    backgroundColor: news.status === 'Published' ? '#22c55e' : '#f59e0b',
+                }}>
+                    <Text style={{ color: 'white', fontSize: 11, fontWeight: 'bold' }}>
+                        {news.status}
+                    </Text>
+                </View>
             </View>
         </View>
 
@@ -110,6 +125,16 @@ export default function NewsPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [newsList, setNewsList] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [showTypeModal, setShowTypeModal] = useState(false);
+
+    const handleAddPress = () => {
+        setShowTypeModal(true);
+    };
+
+    const handleTypeSelect = (type: string) => {
+        setShowTypeModal(false);
+        router.push({ pathname: '/(admin)/news/editor', params: { type } } as any);
+    };
 
     const fetchNews = async () => {
         try {
@@ -201,145 +226,196 @@ export default function NewsPage() {
     };
 
     return (
-        <ScrollView
-            style={{ flex: 1, backgroundColor: '#f9fafb' }}
-            contentContainerStyle={{ paddingBottom: 100 }}
-            showsVerticalScrollIndicator={false}
-        >
-            <LinearGradient
-                colors={['#0ea5e9', '#0284c7']}
-                style={{
-                    paddingTop: 48,
-                    paddingBottom: 48,
-                    paddingHorizontal: 24,
-                    borderBottomLeftRadius: 40,
-                    borderBottomRightRadius: 40,
-                    marginBottom: 24
-                }}
+        <>
+            <ScrollView
+                style={{ flex: 1, backgroundColor: '#f9fafb' }}
+                contentContainerStyle={{ paddingBottom: 100 }}
+                showsVerticalScrollIndicator={false}
             >
-                <AnimatedBubble size={120} top={-30} left={screenWidth - 100} />
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 24 }}>
-                    <TouchableOpacity
-                        onPress={() => router.back()}
-                        style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: 8, borderRadius: 12, marginRight: 16 }}
-                    >
-                        <ArrowLeft size={24} color="white" />
-                    </TouchableOpacity>
-                    <View style={{ flex: 1 }}>
-                        <Text style={{ color: 'white', fontSize: 28, fontWeight: 'bold' }}>News & Updates</Text>
-                        <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, marginTop: 4 }}>Manage party announcements</Text>
-                    </View>
-                    <TouchableOpacity
-                        onPress={() => router.push('/(admin)/news/editor' as any)}
-                        style={{
-                            backgroundColor: 'white',
-                            paddingHorizontal: 16,
-                            paddingVertical: 12,
-                            borderRadius: 16,
-                            flexDirection: 'row',
-                            alignItems: 'center'
-                        }}
-                    >
-                        <Plus size={20} color="#0284c7" />
-                    </TouchableOpacity>
-                </View>
-
-                <View style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    backgroundColor: 'rgba(255,255,255,0.2)',
-                    paddingHorizontal: 16,
-                    borderRadius: 16,
-                    borderWidth: 1,
-                    borderColor: 'rgba(255,255,255,0.3)'
-                }}>
-                    <Search size={20} color="white" />
-                    <TextInput
-                        style={{ flex: 1, paddingVertical: 12, paddingHorizontal: 12, color: 'white', fontSize: 16 }}
-                        placeholder="Search news..."
-                        placeholderTextColor="rgba(255,255,255,0.6)"
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                    />
-                </View>
-            </LinearGradient>
-
-            <View style={{ paddingHorizontal: 16 }}>
-                {/* Stats */}
-                <View style={{ flexDirection: 'row', marginBottom: 24 }}>
-                    <View style={{
-                        flex: 1,
-                        backgroundColor: 'white',
-                        borderRadius: 16,
-                        padding: 16,
-                        marginRight: 8,
-                        borderLeftWidth: 4,
-                        borderLeftColor: '#22c55e',
-                        elevation: 2,
-                    }}>
-                        <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#111827' }}>{loading ? '...' : publishedCount}</Text>
-                        <Text style={{ color: '#6b7280', fontSize: 14 }}>Published</Text>
-                    </View>
-                    <View style={{
-                        flex: 1,
-                        backgroundColor: 'white',
-                        borderRadius: 16,
-                        padding: 16,
-                        marginLeft: 8,
-                        borderLeftWidth: 4,
-                        borderLeftColor: '#f59e0b',
-                        elevation: 2,
-                    }}>
-                        <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#111827' }}>{loading ? '...' : draftCount}</Text>
-                        <Text style={{ color: '#6b7280', fontSize: 14 }}>Drafts</Text>
-                    </View>
-                </View>
-
-                <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#1f2937', marginBottom: 16, paddingHorizontal: 8 }}>
-                    Recent Articles ({filteredNews.length})
-                </Text>
-
-                {loading ? (
-                    <View style={{ paddingVertical: 40, alignItems: 'center' }}>
-                        <ActivityIndicator size="large" color="#0284c7" />
-                        <Text style={{ color: '#9ca3af', marginTop: 16 }}>Loading news...</Text>
-                    </View>
-                ) : filteredNews.length > 0 ? (
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -8 }}>
-                        {filteredNews.map((news: any) => (
-                            <View
-                                key={news._id}
-                                style={{
-                                    width: getCardWidth(),
-                                    paddingHorizontal: 8,
-                                }}
-                            >
-                                <NewsCard
-                                    news={news}
-                                    router={router}
-                                    onDelete={handleDelete}
-                                />
-                            </View>
-                        ))}
-                    </View>
-                ) : (
-                    <View style={{ alignItems: 'center', paddingVertical: 40 }}>
-                        <Text style={{ color: '#9ca3af', fontSize: 16 }}>No news articles found</Text>
+                <LinearGradient
+                    colors={['#0ea5e9', '#0284c7']}
+                    style={{
+                        paddingTop: 48,
+                        paddingBottom: 48,
+                        paddingHorizontal: 24,
+                        borderBottomLeftRadius: 40,
+                        borderBottomRightRadius: 40,
+                        marginBottom: 24
+                    }}
+                >
+                    <AnimatedBubble size={120} top={-30} left={screenWidth - 100} />
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 24 }}>
                         <TouchableOpacity
-                            onPress={() => router.push('/(admin)/news/editor' as any)}
+                            onPress={() => router.back()}
+                            style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: 8, borderRadius: 12, marginRight: 16 }}
+                        >
+                            <ArrowLeft size={24} color="white" />
+                        </TouchableOpacity>
+                        <View style={{ flex: 1 }}>
+                            <Text style={{ color: 'white', fontSize: 28, fontWeight: 'bold' }}>News & Updates</Text>
+                            <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, marginTop: 4 }}>Manage party announcements</Text>
+                        </View>
+                        <TouchableOpacity
+                            onPress={handleAddPress}
                             style={{
-                                marginTop: 16,
-                                backgroundColor: '#0284c7',
-                                paddingHorizontal: 24,
+                                backgroundColor: 'white',
+                                paddingHorizontal: 16,
                                 paddingVertical: 12,
-                                borderRadius: 12
+                                borderRadius: 16,
+                                flexDirection: 'row',
+                                alignItems: 'center'
                             }}
                         >
-                            <Text style={{ color: 'white', fontWeight: 'bold' }}>Create First Article</Text>
+                            <Plus size={20} color="#0284c7" />
                         </TouchableOpacity>
                     </View>
-                )}
-            </View>
-        </ScrollView>
+
+                    <View style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        backgroundColor: 'rgba(255,255,255,0.2)',
+                        paddingHorizontal: 16,
+                        borderRadius: 16,
+                        borderWidth: 1,
+                        borderColor: 'rgba(255,255,255,0.3)'
+                    }}>
+                        <Search size={20} color="white" />
+                        <TextInput
+                            style={{ flex: 1, paddingVertical: 12, paddingHorizontal: 12, color: 'white', fontSize: 16 }}
+                            placeholder="Search news..."
+                            placeholderTextColor="rgba(255,255,255,0.6)"
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                        />
+                    </View>
+                </LinearGradient>
+
+                <View style={{ paddingHorizontal: 16 }}>
+                    {/* Stats */}
+                    <View style={{ flexDirection: 'row', marginBottom: 24 }}>
+                        <View style={{
+                            flex: 1,
+                            backgroundColor: 'white',
+                            borderRadius: 16,
+                            padding: 16,
+                            marginRight: 8,
+                            borderLeftWidth: 4,
+                            borderLeftColor: '#22c55e',
+                            elevation: 2,
+                        }}>
+                            <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#111827' }}>{loading ? '...' : publishedCount}</Text>
+                            <Text style={{ color: '#6b7280', fontSize: 14 }}>Published</Text>
+                        </View>
+                        <View style={{
+                            flex: 1,
+                            backgroundColor: 'white',
+                            borderRadius: 16,
+                            padding: 16,
+                            marginLeft: 8,
+                            borderLeftWidth: 4,
+                            borderLeftColor: '#f59e0b',
+                            elevation: 2,
+                        }}>
+                            <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#111827' }}>{loading ? '...' : draftCount}</Text>
+                            <Text style={{ color: '#6b7280', fontSize: 14 }}>Drafts</Text>
+                        </View>
+                    </View>
+
+                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#1f2937', marginBottom: 16, paddingHorizontal: 8 }}>
+                        Recent Articles ({filteredNews.length})
+                    </Text>
+
+                    {loading ? (
+                        <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+                            <ActivityIndicator size="large" color="#0284c7" />
+                            <Text style={{ color: '#9ca3af', marginTop: 16 }}>Loading news...</Text>
+                        </View>
+                    ) : filteredNews.length > 0 ? (
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -8 }}>
+                            {filteredNews.map((news: any) => (
+                                <View
+                                    key={news._id}
+                                    style={{
+                                        width: getCardWidth(),
+                                        paddingHorizontal: 8,
+                                    }}
+                                >
+                                    <NewsCard
+                                        news={news}
+                                        router={router}
+                                        onDelete={handleDelete}
+                                    />
+                                </View>
+                            ))}
+                        </View>
+                    ) : (
+                        <View style={{ alignItems: 'center', paddingVertical: 40 }}>
+                            <Text style={{ color: '#9ca3af', fontSize: 16 }}>No news articles found</Text>
+                            <TouchableOpacity
+                                onPress={handleAddPress}
+                                style={{
+                                    marginTop: 16,
+                                    backgroundColor: '#0284c7',
+                                    paddingHorizontal: 24,
+                                    paddingVertical: 12,
+                                    borderRadius: 12
+                                }}
+                            >
+                                <Text style={{ color: 'white', fontWeight: 'bold' }}>Create First Article</Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
+                </View>
+            </ScrollView>
+
+            {/* Type Selection Modal */}
+            <Modal
+                visible={showTypeModal}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowTypeModal(false)}
+            >
+                <TouchableOpacity
+                    activeOpacity={1}
+                    onPress={() => setShowTypeModal(false)}
+                    style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}
+                >
+                    <View style={{ backgroundColor: 'white', width: '100%', maxWidth: 340, borderRadius: 24, padding: 20 }}>
+                        <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 6, textAlign: 'center', color: '#111827' }}>Create New</Text>
+                        <Text style={{ fontSize: 14, color: '#6b7280', marginBottom: 24, textAlign: 'center' }}>What would you like to post?</Text>
+
+                        <TouchableOpacity
+                            onPress={() => handleTypeSelect('News')}
+                            style={{
+                                flexDirection: 'row', alignItems: 'center', padding: 16, backgroundColor: '#eff6ff', borderRadius: 16, marginBottom: 12
+                            }}
+                        >
+                            <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: '#bfdbfe', alignItems: 'center', justifyContent: 'center', marginRight: 16 }}>
+                                <Calendar size={24} color="#2563eb" />
+                            </View>
+                            <View>
+                                <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1e3a8a' }}>Add News</Text>
+                                <Text style={{ fontSize: 13, color: '#60a5fa' }}>Latest updates & announcements</Text>
+                            </View>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            onPress={() => handleTypeSelect('Program')}
+                            style={{
+                                flexDirection: 'row', alignItems: 'center', padding: 16, backgroundColor: '#f0fdf4', borderRadius: 16
+                            }}
+                        >
+                            <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: '#bbf7d0', alignItems: 'center', justifyContent: 'center', marginRight: 16 }}>
+                                <Calendar size={24} color="#16a34a" />
+                            </View>
+                            <View>
+                                <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#14532d' }}>Add Program</Text>
+                                <Text style={{ fontSize: 13, color: '#4ade80' }}>Party programs & events</Text>
+                            </View>
+                        </TouchableOpacity>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
+        </>
     );
 }

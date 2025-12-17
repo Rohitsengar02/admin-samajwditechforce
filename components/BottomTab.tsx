@@ -21,6 +21,7 @@ import {
     UserCheck,
     BellRing,
     Inbox,
+    Calendar,
     LucideIcon
 } from 'lucide-react-native';
 
@@ -56,6 +57,7 @@ const CAROUSEL_ITEMS: MenuItem[] = [
     { name: 'Training', icon: BookOpen, path: '/(admin)/training', gradient: ['#10B981', '#059669'] },
     { name: 'Posters', icon: ImageIcon, path: '/(admin)/posters', gradient: ['#F97316', '#EA580C'] },
     { name: 'News', icon: Newspaper, path: '/(admin)/news', gradient: ['#0ea5e9', '#0284c7'] },
+    { name: 'Events', icon: Calendar, path: '/(admin)/events', gradient: ['#14b8a6', '#0d9488'] },
     { name: 'Resources', icon: FileText, path: '/(admin)/resources', gradient: ['#EC4899', '#DB2777'] },
     { name: 'Communication', icon: MessageSquare, path: '/(admin)/communication', gradient: ['#10b981', '#059669'] },
     { name: 'Election', icon: Vote, path: '/(admin)/election', gradient: ['#EF4444', '#DC2626'] },

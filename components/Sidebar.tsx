@@ -24,7 +24,8 @@ import {
     Film,
     Home,
     BellRing,
-    Inbox
+    Inbox,
+    Calendar
 } from 'lucide-react-native';
 
 interface MenuItem {
@@ -45,6 +46,7 @@ const MENU_ITEMS: MenuItem[] = [
     { name: 'Training', icon: BookOpen, path: '/(admin)/training', gradient: ['#10B981', '#059669'], iconColor: '#10B981' },
     { name: 'Member Approvals', icon: Shield, path: '/(admin)/verifications', gradient: ['#059669', '#047857'], iconColor: '#059669' },
     { name: 'News', icon: Newspaper, path: '/(admin)/news', gradient: ['#0ea5e9', '#0284c7'], iconColor: '#0ea5e9' },
+    { name: 'Events', icon: Calendar, path: '/(admin)/events', gradient: ['#14b8a6', '#0d9488'], iconColor: '#14b8a6' },
     { name: 'Notifications', icon: BellRing, path: '/(admin)/notifications', gradient: ['#8b5cf6', '#7c3aed'], iconColor: '#8b5cf6' },
     { name: 'Onboarding', icon: Smartphone, path: '/(admin)/onboarding', gradient: ['#8b5cf6', '#7c3aed'], iconColor: '#8b5cf6' },
     { name: 'Posters', icon: ImageIcon, path: '/posters', gradient: ['#F97316', '#EA580C'], iconColor: '#F97316' },

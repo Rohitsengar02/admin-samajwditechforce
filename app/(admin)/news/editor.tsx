@@ -142,7 +142,9 @@ export default function NewsEditorPage() {
     const router = useRouter();
     const params = useLocalSearchParams();
     const isEditing = !!params.id;
+    const initialType = (params.type as string) || 'News';
 
+    const [newsType, setNewsType] = useState(initialType);
     const [title, setTitle] = useState('');
     const [excerpt, setExcerpt] = useState('');
     const [coverImage, setCoverImage] = useState<string | null>(null);
@@ -169,6 +171,7 @@ export default function NewsEditorPage() {
                 setExcerpt(news.excerpt);
                 setCoverImage(news.coverImage);
                 setBlocks(news.content.map((b: any) => ({ ...b, id: b._id || Date.now().toString() })));
+                setNewsType(news.type || 'News');
             }
         } catch (error) {
             console.error('Error fetching news details:', error);
@@ -242,7 +245,8 @@ export default function NewsEditorPage() {
             excerpt,
             coverImage: coverImage || undefined,
             content: blocks.map(({ id, ...rest }) => rest),
-            status
+            status,
+            type: newsType
         };
 
         console.log('Data to save:', JSON.stringify(newsData, null, 2));
@@ -480,8 +484,8 @@ export default function NewsEditorPage() {
                             <ArrowLeft size={24} color="white" />
                         </TouchableOpacity>
                         <View className="flex-1">
-                            <Text className="text-white text-3xl font-bold">{isEditing ? 'Edit Article' : 'New Article'}</Text>
-                            <Text className="text-sky-100 text-sm mt-1">Compose your news story</Text>
+                            <Text className="text-white text-3xl font-bold">{isEditing ? `Edit ${newsType}` : `New ${newsType}`}</Text>
+                            <Text className="text-sky-100 text-sm mt-1">Compose your {newsType.toLowerCase()} story</Text>
                         </View>
                     </View>
                 </LinearGradient>
@@ -640,7 +644,7 @@ export default function NewsEditorPage() {
                             ) : (
                                 <>
                                     <CheckCircle size={20} color="white" />
-                                    <Text style={{ color: 'white', fontWeight: 'bold', marginLeft: 8, fontSize: 18 }}>Publish News</Text>
+                                    <Text style={{ color: 'white', fontWeight: 'bold', marginLeft: 8, fontSize: 18 }}>Publish {newsType}</Text>
                                 </>
                             )}
                         </LinearGradient>
