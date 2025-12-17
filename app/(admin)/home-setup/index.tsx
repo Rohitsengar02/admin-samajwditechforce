@@ -82,6 +82,7 @@ const DEFAULT_CONTENT = [
         icon: User,
         color: '#E11D48',
         data: {
+            title: 'Our Leaders',
             slides: [{
                 badge: 'National President',
                 name: 'Akhilesh Yadav',
@@ -118,20 +119,8 @@ const DEFAULT_CONTENT = [
             ]
         }
     },
-    {
-        id: 'programs',
-        label: 'Our Programs',
-        icon: Grid,
-        color: '#4F46E5',
-        data: {
-            title: 'Our Programs',
-            items: [
-                { title: 'Youth Employment', desc: 'Creating job opportunities', image: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644' },
-                { title: 'Farmer Welfare', desc: 'Supporting agricultural community', image: 'https://images.unsplash.com/photo-1576267423445-b2e0074d68a4' },
-                { title: 'Education for All', desc: 'Quality education accessible to everyone', image: 'https://images.unsplash.com/photo-1491438590914-bc09fcaaf77a' }
-            ]
-        }
-    },
+
+
     {
         id: 'explore',
         label: 'Explore Pages',
@@ -253,10 +242,9 @@ export default function HomeManager() {
                     { ...DEFAULT_CONTENT[1], data: data.data.trackRecord || DEFAULT_CONTENT[1].data },
                     { ...DEFAULT_CONTENT[2], data: data.data.president || DEFAULT_CONTENT[2].data },
                     { ...DEFAULT_CONTENT[3], data: data.data.legacy || DEFAULT_CONTENT[3].data },
-                    { ...DEFAULT_CONTENT[4], data: data.data.programs || DEFAULT_CONTENT[4].data },
-                    { ...DEFAULT_CONTENT[5], data: data.data.explorePages || DEFAULT_CONTENT[5].data },
+                    { ...DEFAULT_CONTENT[4], data: data.data.explorePages || DEFAULT_CONTENT[4].data },
                     // Footer from dedicated API
-                    { ...DEFAULT_CONTENT[6], data: footerData.success ? footerData.data : DEFAULT_CONTENT[6].data },
+                    { ...DEFAULT_CONTENT[5], data: footerData.success ? footerData.data : DEFAULT_CONTENT[5].data },
                 ];
                 setSections(content);
             }
@@ -570,6 +558,14 @@ export default function HomeManager() {
 
                         {id === 'president' && (
                             <>
+                                <Text style={styles.label}>Section Title</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    value={editData.title}
+                                    onChangeText={(t) => updateEditField('title', t)}
+                                    placeholder="Our Leaders"
+                                />
+
                                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                                     <Text style={styles.label}>President Slides ({editData.slides?.length || 0})</Text>
                                     <TouchableOpacity
@@ -1021,91 +1017,7 @@ export default function HomeManager() {
                             </>
                         )}
 
-                        {/* Programs Section Editor */}
-                        {id === 'programs' && (
-                            <>
-                                <Text style={styles.label}>Section Title</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    value={editData.title}
-                                    onChangeText={(t) => updateEditField('title', t)}
-                                    placeholder="Our Programs"
-                                />
 
-                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, marginBottom: 12 }}>
-                                    <Text style={styles.label}>Programs ({editData.items?.length || 0})</Text>
-                                    <TouchableOpacity
-                                        style={{ backgroundColor: '#059669', padding: 8, borderRadius: 6 }}
-                                        onPress={() => updateEditField('items', [...(editData.items || []), { title: 'New Program', desc: 'Program description', image: '', icon: 'star' }])}
-                                    >
-                                        <Plus color="#fff" size={16} />
-                                    </TouchableOpacity>
-                                </View>
-
-                                {(editData.items || []).map((item: any, index: number) => (
-                                    <View key={index} style={{ marginBottom: 16, padding: 16, backgroundColor: '#f0fdf4', borderRadius: 12, borderWidth: 1, borderColor: '#86efac' }}>
-                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
-                                            <Text style={{ fontWeight: 'bold', color: '#166534' }}>Program {index + 1}</Text>
-                                            <TouchableOpacity onPress={() => {
-                                                const newItems = [...editData.items];
-                                                newItems.splice(index, 1);
-                                                updateEditField('items', newItems);
-                                            }}>
-                                                <Trash2 color="#EF4444" size={18} />
-                                            </TouchableOpacity>
-                                        </View>
-
-                                        <Text style={{ fontSize: 12, marginBottom: 4, color: '#666' }}>Program Image</Text>
-                                        <TouchableOpacity onPress={() => handlePickImage('image', index)} style={{ marginBottom: 12 }}>
-                                            {item.image ? (
-                                                <Image source={{ uri: item.image }} style={{ width: 80, height: 80, borderRadius: 8 }} resizeMode="cover" />
-                                            ) : (
-                                                <View style={{ width: 80, height: 80, backgroundColor: '#e5e7eb', justifyContent: 'center', alignItems: 'center', borderRadius: 8 }}>
-                                                    <Text style={{ color: '#666', fontSize: 12 }}>Upload</Text>
-                                                </View>
-                                            )}
-                                        </TouchableOpacity>
-
-                                        <Text style={{ fontSize: 12, marginBottom: 4, color: '#666' }}>Title</Text>
-                                        <TextInput
-                                            style={[styles.input, { marginBottom: 8 }]}
-                                            value={item.title}
-                                            onChangeText={(t) => {
-                                                const newItems = [...editData.items];
-                                                newItems[index] = { ...newItems[index], title: t };
-                                                updateEditField('items', newItems);
-                                            }}
-                                            placeholder="Youth Employment"
-                                        />
-
-                                        <Text style={{ fontSize: 12, marginBottom: 4, color: '#666' }}>Description</Text>
-                                        <TextInput
-                                            style={[styles.input, { marginBottom: 8, height: 60 }]}
-                                            multiline
-                                            value={item.desc}
-                                            onChangeText={(t) => {
-                                                const newItems = [...editData.items];
-                                                newItems[index] = { ...newItems[index], desc: t };
-                                                updateEditField('items', newItems);
-                                            }}
-                                            placeholder="Creating job opportunities for youth..."
-                                        />
-
-                                        <Text style={{ fontSize: 12, marginBottom: 4, color: '#666' }}>Icon (MaterialCommunityIcons)</Text>
-                                        <TextInput
-                                            style={styles.input}
-                                            value={item.icon}
-                                            onChangeText={(t) => {
-                                                const newItems = [...editData.items];
-                                                newItems[index] = { ...newItems[index], icon: t };
-                                                updateEditField('items', newItems);
-                                            }}
-                                            placeholder="briefcase, sprout, school, etc."
-                                        />
-                                    </View>
-                                ))}
-                            </>
-                        )}
 
                         {/* Footer Section Editor */}
                         {id === 'footer' && (
