@@ -107,6 +107,13 @@ export default function SettingsPage() {
                     color="bg-green-600"
                     onPress={() => router.push('/(admin)/settings/about' as any)}
                 />
+                <SettingItem
+                    icon={FileText}
+                    title="Contact Settings"
+                    subtitle="Customize contact page content"
+                    color="bg-purple-600"
+                    onPress={() => router.push('/(admin)/settings/contact-settings' as any)}
+                />
 
                 <TouchableOpacity
                     onPress={handleLogout}
