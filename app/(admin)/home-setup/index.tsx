@@ -199,7 +199,11 @@ const DEFAULT_CONTENT = [
                         facebook: 'https://facebook.com/samajwadiparty',
                         twitter: 'https://twitter.com/samajwadiparty',
                         instagram: 'https://instagram.com/samajwadiparty',
-                        youtube: 'https://youtube.com/samajwadiparty'
+                        youtube: 'https://youtube.com/samajwadiparty',
+                        telegram: 'https://t.me/samajwaditechforce',
+                        linkedin: 'https://www.linkedin.com/company/samajwadiparty',
+                        whatsapp: 'https://chat.whatsapp.com/samajwaditechforce',
+                        website: 'https://samajwadiparty.in'
                     }
                 }
             ],
@@ -1238,6 +1242,62 @@ export default function HomeManager() {
                                                     }}
                                                     placeholder="https://youtube.com/..."
                                                 />
+                                                <Text style={styles.label}>Telegram URL</Text>
+                                                <TextInput
+                                                    style={styles.input}
+                                                    value={column.social?.telegram || ''}
+                                                    onChangeText={(t) => {
+                                                        const newCols = [...editData.columns];
+                                                        newCols[colIndex] = {
+                                                            ...newCols[colIndex],
+                                                            social: { ...newCols[colIndex].social, telegram: t }
+                                                        };
+                                                        updateEditField('columns', newCols);
+                                                    }}
+                                                    placeholder="https://t.me/..."
+                                                />
+                                                <Text style={styles.label}>LinkedIn URL</Text>
+                                                <TextInput
+                                                    style={styles.input}
+                                                    value={column.social?.linkedin || ''}
+                                                    onChangeText={(t) => {
+                                                        const newCols = [...editData.columns];
+                                                        newCols[colIndex] = {
+                                                            ...newCols[colIndex],
+                                                            social: { ...newCols[colIndex].social, linkedin: t }
+                                                        };
+                                                        updateEditField('columns', newCols);
+                                                    }}
+                                                    placeholder="https://linkedin.com/..."
+                                                />
+                                                <Text style={styles.label}>WhatsApp URL</Text>
+                                                <TextInput
+                                                    style={styles.input}
+                                                    value={column.social?.whatsapp || ''}
+                                                    onChangeText={(t) => {
+                                                        const newCols = [...editData.columns];
+                                                        newCols[colIndex] = {
+                                                            ...newCols[colIndex],
+                                                            social: { ...newCols[colIndex].social, whatsapp: t }
+                                                        };
+                                                        updateEditField('columns', newCols);
+                                                    }}
+                                                    placeholder="https://wa.me/..."
+                                                />
+                                                <Text style={styles.label}>Website URL</Text>
+                                                <TextInput
+                                                    style={styles.input}
+                                                    value={column.social?.website || ''}
+                                                    onChangeText={(t) => {
+                                                        const newCols = [...editData.columns];
+                                                        newCols[colIndex] = {
+                                                            ...newCols[colIndex],
+                                                            social: { ...newCols[colIndex].social, website: t }
+                                                        };
+                                                        updateEditField('columns', newCols);
+                                                    }}
+                                                    placeholder="https://example.com"
+                                                />
                                             </>
                                         )}
                                     </View>
@@ -1255,7 +1315,7 @@ export default function HomeManager() {
                                                 content: '',
                                                 links: [],
                                                 contact: { address: '', phone: '', email: '' },
-                                                social: { facebook: '', twitter: '', instagram: '', youtube: '' }
+                                                social: { facebook: '', twitter: '', instagram: '', youtube: '', telegram: '', linkedin: '', whatsapp: '', website: '' }
                                             }
                                         ]);
                                     }}>
