@@ -42,7 +42,13 @@ export default function VerificationsPage() {
             });
             const data = await response.json();
             if (response.ok) {
-                setVerifications(data);
+                // Sort by newest first (most recent updatedAt on top)
+                const sortedData = data.sort((a: any, b: any) => {
+                    const dateA = new Date(a.updatedAt || a.createdAt).getTime();
+                    const dateB = new Date(b.updatedAt || b.createdAt).getTime();
+                    return dateB - dateA; // Descending order (newest first)
+                });
+                setVerifications(sortedData);
             } else {
                 console.error('Failed to fetch verifications:', data);
             }
