@@ -23,6 +23,7 @@ import {
     Inbox,
     Calendar,
     Film,
+    TrendingUp,
     LucideIcon
 } from 'lucide-react-native';
 
@@ -50,6 +51,7 @@ const BOTTOM_TABS: MenuItem[] = [
 
 // Carousel items (remaining menu items)
 const CAROUSEL_ITEMS: MenuItem[] = [
+    { name: 'Leaderboard', icon: TrendingUp, path: '/(admin)/leaderboard', gradient: ['#f59e0b', '#d97706'] },
     { name: 'All Users', icon: Users, path: '/(admin)/users', gradient: ['#4F46E5', '#4338ca'] },
     { name: 'Notifications', icon: BellRing, path: '/(admin)/notifications', gradient: ['#8b5cf6', '#7c3aed'] },
     { name: 'Approvals', icon: UserCheck, path: '/(admin)/approvals', gradient: ['#10B981', '#059669'] },
