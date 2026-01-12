@@ -28,6 +28,13 @@ export default function MasterAdminDashboard() {
                     Authorization: `Bearer ${token}`,
                 },
             });
+            if (response.status === 401) {
+                await AsyncStorage.removeItem('adminToken');
+                const { router } = require('expo-router');
+                router.replace('/login');
+                return;
+            }
+
             const data = await response.json();
             if (response.ok) {
                 setAdmins(data);

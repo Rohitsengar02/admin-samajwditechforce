@@ -22,6 +22,7 @@ export default function UsersScreen() {
     const [editPhone, setEditPhone] = useState('');
     const [editStatus, setEditStatus] = useState('');
     const [editRole, setEditRole] = useState('');
+    const [editPoints, setEditPoints] = useState('');
 
     const fetchUsers = async () => {
         try {
@@ -120,6 +121,7 @@ export default function UsersScreen() {
         setEditPhone(item.phone || '');
         setEditStatus(item.verificationStatus || 'Pending');
         setEditRole(item.role || 'Member');
+        setEditPoints(item.points ? String(item.points) : '0');
         setModalVisible(true);
     };
 
@@ -135,8 +137,10 @@ export default function UsersScreen() {
                 name: editName,
                 phone: editPhone,
                 verificationStatus: editStatus,
-                role: editRole
+                role: editRole,
+                points: Number(editPoints) || 0
             };
+
 
             const response = await fetch(`${url}/auth/update/${selectedUser._id}?type=${type}`, {
                 method: 'PUT',
@@ -337,6 +341,17 @@ export default function UsersScreen() {
                                     onChangeText={setEditPhone}
                                     keyboardType="phone-pad"
                                     placeholder="Enter phone number"
+                                />
+                            </View>
+
+                            <View style={styles.formGroup}>
+                                <Text style={styles.label}>Points</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    value={editPoints}
+                                    onChangeText={setEditPoints}
+                                    keyboardType="numeric"
+                                    placeholder="0"
                                 />
                             </View>
 
