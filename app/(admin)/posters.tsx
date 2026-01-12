@@ -31,6 +31,10 @@ interface Poster {
     downloadCount: number;
     cloudinaryPublicId: string;
     createdAt: string;
+    usersWhoDownloaded?: Array<{
+        userId: { _id: string; name: string; phone: string; profileImage?: string };
+        downloadedAt: string;
+    }>;
 }
 
 interface Stats {
@@ -51,6 +55,12 @@ export default function PostersPage() {
     const [updating, setUpdating] = useState(false);
     const [selectedImage, setSelectedImage] = useState<ImagePicker.ImagePickerAsset | null>(null);
     const [stats, setStats] = useState<Stats>({ totalPosters: 0, totalDownloads: 0 });
+
+    // Download Details State
+    const [showDownloadsModal, setShowDownloadsModal] = useState(false);
+    const [selectedPosterDownloads, setSelectedPosterDownloads] = useState<any[]>([]);
+    const [fetchingDownloads, setFetchingDownloads] = useState(false);
+    const [currentPosterTitle, setCurrentPosterTitle] = useState('');
 
     const { width } = useWindowDimensions();
     const isDesktop = Platform.OS === 'web' && width >= 1024;
@@ -86,6 +96,32 @@ export default function PostersPage() {
             setStats(data);
         } catch (error) {
             console.error('Error fetching stats:', error);
+        }
+    };
+
+    const fetchPosterDownloads = async (posterId: string, posterTitle: string) => {
+        try {
+            setFetchingDownloads(true);
+            setCurrentPosterTitle(posterTitle);
+            setShowDownloadsModal(true);
+
+            const token = await AsyncStorage.getItem('adminToken');
+            const res = await fetch(`${API_URL}/posters/${posterId}/downloads`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setSelectedPosterDownloads(data.downloads || []);
+            } else {
+                Alert.alert('Error', data.message || 'Failed to fetch downloads');
+            }
+        } catch (error) {
+            console.error('Error fetching downloads:', error);
+            Alert.alert('Error', 'Network error');
+        } finally {
+            setFetchingDownloads(false);
         }
     };
 
@@ -332,10 +368,14 @@ export default function PostersPage() {
             >
                 <Text style={styles.posterTitle} numberOfLines={2}>{item.title}</Text>
                 <View style={styles.posterActions}>
-                    <View style={styles.downloadInfo}>
+                    <TouchableOpacity
+                        style={styles.downloadInfo}
+                        onPress={() => fetchPosterDownloads(item._id, item.title)}
+                    >
                         <MaterialCommunityIcons name="download" size={16} color="#fff" />
                         <Text style={styles.downloadCount}>{item.downloadCount}</Text>
-                    </View>
+                        <MaterialCommunityIcons name="eye-outline" size={14} color="#fff" style={{ marginLeft: 4 }} />
+                    </TouchableOpacity>
                     <View style={styles.actionButtons}>
                         <TouchableOpacity
                             style={styles.editButton}
@@ -548,6 +588,68 @@ export default function PostersPage() {
                     </View>
                 </View>
             </Modal>
+
+            {/* Downloads Details Modal */}
+            <Modal
+                visible={showDownloadsModal}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowDownloadsModal(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={[styles.modalContent, { maxHeight: '80%' }]}>
+                        <LinearGradient colors={['#fff', '#f8fafc']} style={[styles.modalGradient, { padding: 0 }]}>
+                            <View style={[styles.modalHeader, { padding: 20, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }]}>
+                                <View>
+                                    <Text style={styles.modalTitle}>Download History</Text>
+                                    <Text style={styles.modalSubtitle}>{currentPosterTitle}</Text>
+                                </View>
+                                <TouchableOpacity onPress={() => setShowDownloadsModal(false)}>
+                                    <MaterialCommunityIcons name="close-circle" size={28} color="#64748B" />
+                                </TouchableOpacity>
+                            </View>
+
+                            {fetchingDownloads ? (
+                                <View style={{ padding: 40, alignItems: 'center' }}>
+                                    <ActivityIndicator size="large" color={SP_RED} />
+                                    <Text style={{ marginTop: 12, color: '#64748b' }}>Fetching list...</Text>
+                                </View>
+                            ) : (
+                                <FlatList
+                                    data={selectedPosterDownloads}
+                                    keyExtractor={(item, index) => index.toString()}
+                                    contentContainerStyle={{ padding: 20 }}
+                                    ListEmptyComponent={
+                                        <View style={{ padding: 40, alignItems: 'center' }}>
+                                            <MaterialCommunityIcons name="download-off" size={48} color="#cbd5e1" />
+                                            <Text style={{ marginTop: 12, color: '#64748b', textAlign: 'center' }}>No specific user downloads tracked yet.</Text>
+                                        </View>
+                                    }
+                                    renderItem={({ item }) => (
+                                        <View style={styles.downloadUserRow}>
+                                            <View style={styles.downloadUserAvatar}>
+                                                {item.userId?.profileImage ? (
+                                                    <Image source={{ uri: item.userId.profileImage }} style={styles.avatarImg} />
+                                                ) : (
+                                                    <Text style={styles.avatarText}>{item.userId?.name?.charAt(0) || 'U'}</Text>
+                                                )}
+                                            </View>
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={styles.downloadUserName}>{item.userId?.name || 'Unknown User'}</Text>
+                                                <Text style={styles.downloadUserPhone}>{item.userId?.phone || 'No phone'}</Text>
+                                            </View>
+                                            <View style={{ alignItems: 'flex-end' }}>
+                                                <Text style={styles.downloadDate}>{new Date(item.downloadedAt).toLocaleDateString()}</Text>
+                                                <Text style={styles.downloadTime}>{new Date(item.downloadedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+                                            </View>
+                                        </View>
+                                    )}
+                                />
+                            )}
+                        </LinearGradient>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 }
@@ -601,12 +703,20 @@ const styles = StyleSheet.create({
     imagePickerPlaceholder: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8FAFC' },
     imagePickerText: { marginTop: 12, fontSize: 15, color: '#64748B', fontWeight: '700' },
     imagePickerSubtext: { marginTop: 4, fontSize: 12, color: '#94A3B8', fontWeight: '500' },
-    editImagePicker: { height: 200, borderRadius: 16, overflow: 'hidden', marginBottom: 20, borderWidth: 2, borderColor: '#E2E8F0', position: 'relative' },
-    editPreviewImage: { width: '100%', height: '100%', backgroundColor: '#F1F5F9' },
-    changeImageOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.6)', padding: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-    changeImageText: { color: '#fff', fontSize: 14, fontWeight: '600' },
-    submitButton: { borderRadius: 14, overflow: 'hidden', shadowColor: SP_RED, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },
-    submitButtonDisabled: { opacity: 0.6 },
-    submitButtonGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 18 },
+    editImagePicker: { width: '100%', height: 200, borderRadius: 16, overflow: 'hidden', marginBottom: 20, position: 'relative' },
+    editPreviewImage: { width: '100%', height: '100%' },
+    changeImageOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center', gap: 8 },
+    changeImageText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+    submitButton: { borderRadius: 14, overflow: 'hidden', marginTop: 10 },
+    submitButtonDisabled: { opacity: 0.7 },
+    submitButtonGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 16 },
     submitButtonText: { color: '#fff', fontSize: 16, fontWeight: '800' },
+    downloadUserRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f1f5f9', gap: 12 },
+    downloadUserAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#fee2e2', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+    avatarImg: { width: '100%', height: '100%' },
+    avatarText: { fontSize: 18, fontWeight: 'bold', color: SP_RED },
+    downloadUserName: { fontSize: 15, fontWeight: '700', color: '#1e293b' },
+    downloadUserPhone: { fontSize: 12, color: '#64748b', marginTop: 2 },
+    downloadDate: { fontSize: 12, fontWeight: '600', color: '#1e293b' },
+    downloadTime: { fontSize: 11, color: '#94a3b8', marginTop: 2 }
 });
