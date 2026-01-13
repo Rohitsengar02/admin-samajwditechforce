@@ -1,10 +1,10 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator, Platform, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator, Platform, RefreshControl, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useFocusEffect } from 'expo-router';
 import {
     BookOpen, Users, Trophy, CheckCircle, Plus, TrendingUp,
-    PlayCircle, FileText, Edit, Clock
+    PlayCircle, FileText, Edit, Clock, Trash2
 } from 'lucide-react-native';
 import { getApiUrl } from '../../../utils/api';
 
@@ -159,6 +159,52 @@ export default function TrainingPage() {
 
     const recentModules = [...modules].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 3);
 
+    const handleDelete = async (moduleId: string, title: string) => {
+        const confirmDelete = () => {
+            return new Promise<boolean>((resolve) => {
+                if (Platform.OS === 'web') {
+                    resolve(window.confirm(`Delete "${title}"?\n\nThis action cannot be undone.`));
+                } else {
+                    Alert.alert(
+                        '⚠️ Delete Module',
+                        `Are you sure you want to delete "${title}"?`,
+                        [
+                            { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+                            { text: 'Delete', style: 'destructive', onPress: () => resolve(true) }
+                        ]
+                    );
+                }
+            });
+        };
+
+        const confirmed = await confirmDelete();
+        if (!confirmed) return;
+
+        try {
+            const response = await fetch(`${API_URL}/${moduleId}`, {
+                method: 'DELETE',
+            });
+
+            if (response.ok) {
+                if (Platform.OS === 'web') {
+                    alert('✅ Module deleted successfully');
+                } else {
+                    Alert.alert('Success', 'Module deleted successfully');
+                }
+                fetchModules();
+            } else {
+                throw new Error('Delete failed');
+            }
+        } catch (error) {
+            console.error('Delete error:', error);
+            if (Platform.OS === 'web') {
+                alert('❌ Failed to delete module');
+            } else {
+                Alert.alert('Error', 'Failed to delete module');
+            }
+        }
+    };
+
     return (
         <ScrollView
             className="flex-1 bg-gray-50"
@@ -274,12 +320,20 @@ export default function TrainingPage() {
                                         </View>
                                     </View>
                                 </View>
-                                <TouchableOpacity
-                                    onPress={() => router.push('/(admin)/training/editor' as any)}
-                                    className="bg-gray-100 px-4 py-2 rounded-xl"
-                                >
-                                    <Edit size={16} color="#6B7280" />
-                                </TouchableOpacity>
+                                <View className="flex-row space-x-2">
+                                    <TouchableOpacity
+                                        onPress={() => router.push(`/(admin)/training/editor?id=${module._id}` as any)}
+                                        className="bg-gray-100 p-3 rounded-xl"
+                                    >
+                                        <Edit size={16} color="#6B7280" />
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        onPress={() => handleDelete(module._id, module.title)}
+                                        className="bg-red-50 p-3 rounded-xl"
+                                    >
+                                        <Trash2 size={16} color="#EF4444" />
+                                    </TouchableOpacity>
+                                </View>
                             </View>
                         ))
                     )}

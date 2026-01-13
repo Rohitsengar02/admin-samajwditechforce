@@ -3,9 +3,10 @@ import { View, Text, ScrollView, TouchableOpacity, TextInput, Dimensions, Alert,
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import {
-    ArrowLeft, Upload, FileText, PlayCircle, CheckCircle, Link as LinkIcon, X
+    ArrowLeft, Upload, FileText, PlayCircle, CheckCircle, Link as LinkIcon, X, Youtube, Smartphone, Video as VideoIcon
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import { getApiUrl } from '../../../utils/api';
 
 const screenWidth = Dimensions.get('window').width;
@@ -15,12 +16,15 @@ const AnimatedBubble = ({ size, top, left }: { size: number; top: number; left: 
 );
 
 const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dssmutzly/image/upload';
+const CLOUDINARY_VIDEO_URL = 'https://api.cloudinary.com/v1_1/dssmutzly/video/upload';
 const UPLOAD_PRESET = 'multimallpro';
 
 export default function CreateModulePage() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
+    const [videoSourceType, setVideoSourceType] = useState<'link' | 'upload'>('link');
+    const [selectedVideoFile, setSelectedVideoFile] = useState<any>(null);
     const [showSuccess, setShowSuccess] = useState(false);
     const [formData, setFormData] = useState({
         title: '',
@@ -60,6 +64,66 @@ export default function CreateModulePage() {
         }
     };
 
+    const uploadVideoToCloudinary = async (videoUri: string) => {
+        const formData = new FormData();
+        try {
+            if (Platform.OS === 'web') {
+                const response = await fetch(videoUri);
+                const blob = await response.blob();
+                formData.append('file', blob, 'training_video.mp4');
+            } else {
+                formData.append('file', {
+                    uri: videoUri,
+                    type: 'video/mp4',
+                    name: 'training_video.mp4',
+                } as any);
+            }
+
+            formData.append('upload_preset', UPLOAD_PRESET);
+            formData.append('resource_type', 'video');
+
+            setUploading(true);
+            const res = await fetch(CLOUDINARY_VIDEO_URL, {
+                method: 'POST',
+                body: formData,
+            });
+
+            const result = await res.json();
+            if (result.secure_url) {
+                return result.secure_url;
+            } else {
+                throw new Error('Video upload failed');
+            }
+        } catch (error) {
+            console.error('Video Upload Error:', error);
+            Alert.alert('Error', 'Failed to upload video');
+            return null;
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const pickVideo = async () => {
+        try {
+            const result = await DocumentPicker.getDocumentAsync({
+                type: 'video/*',
+                copyToCacheDirectory: true,
+            });
+
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+                const video = result.assets[0];
+                if (video.size && video.size > 100 * 1024 * 1024) {
+                    Alert.alert('Error', 'Video size should be less than 100MB');
+                    return;
+                }
+                setSelectedVideoFile(video);
+            }
+        } catch (error) {
+            console.error('Error picking video:', error);
+            Alert.alert('Error', 'Failed to pick video');
+        }
+    };
+
     const pickFile = async () => {
         try {
             const result = await ImagePicker.launchImageLibraryAsync({
@@ -90,9 +154,15 @@ export default function CreateModulePage() {
             Alert.alert('Validation Error', 'Please select a phase');
             return false;
         }
-        if (formData.type === 'video' && !formData.contentUrl.trim()) {
-            Alert.alert('Validation Error', 'Please enter YouTube URL');
-            return false;
+        if (formData.type === 'video') {
+            if (videoSourceType === 'link' && !formData.contentUrl.trim()) {
+                Alert.alert('Validation Error', 'Please enter YouTube URL');
+                return false;
+            }
+            if (videoSourceType === 'upload' && !selectedVideoFile) {
+                Alert.alert('Validation Error', 'Please upload a video file');
+                return false;
+            }
         }
         if (formData.type === 'document' && !formData.contentUrl.trim()) {
             Alert.alert('Validation Error', 'Please upload a document or provide a URL');
@@ -106,13 +176,24 @@ export default function CreateModulePage() {
 
         setLoading(true);
         try {
+            let finalContentUrl = formData.contentUrl.trim();
+
+            if (formData.type === 'video' && videoSourceType === 'upload' && selectedVideoFile) {
+                const uploadedUrl = await uploadVideoToCloudinary(selectedVideoFile.uri);
+                if (!uploadedUrl) {
+                    setLoading(false);
+                    return;
+                }
+                finalContentUrl = uploadedUrl;
+            }
+
             const payload = {
                 title: formData.title.trim(),
                 phase: formData.phase,
                 type: formData.type,
                 duration: formData.duration.trim(),
                 description: formData.description.trim(),
-                contentUrl: formData.contentUrl.trim(),
+                contentUrl: finalContentUrl,
             };
 
             console.log('Creating module with payload:', payload);
@@ -300,18 +381,70 @@ export default function CreateModulePage() {
 
                         {formData.type === 'video' ? (
                             <View>
-                                <Text className="text-gray-600 font-medium mb-2">YouTube Video URL *</Text>
-                                <View className="flex-row items-center bg-gray-50 border border-gray-200 rounded-xl px-4">
-                                    <LinkIcon size={20} color="#9CA3AF" />
-                                    <TextInput
-                                        className="flex-1 p-4 text-gray-800"
-                                        placeholder="https://youtube.com/..."
-                                        value={formData.contentUrl}
-                                        onChangeText={(text) => setFormData({ ...formData, contentUrl: text })}
-                                        autoCapitalize="none"
-                                    />
+                                {/* Source Selector Switch */}
+                                <View className="flex-row space-x-3 mb-6">
+                                    <TouchableOpacity
+                                        onPress={() => setVideoSourceType('link')}
+                                        className={`flex-1 py-3 items-center rounded-xl border-2 ${videoSourceType === 'link' ? 'bg-indigo-50 border-indigo-500' : 'bg-white border-gray-100'}`}
+                                    >
+                                        <View className="flex-row items-center">
+                                            <Youtube size={18} color={videoSourceType === 'link' ? '#4f46e5' : '#9ca3af'} />
+                                            <Text className={`font-bold ml-2 ${videoSourceType === 'link' ? 'text-indigo-900' : 'text-gray-500'}`}>YouTube Link</Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        onPress={() => setVideoSourceType('upload')}
+                                        className={`flex-1 py-3 items-center rounded-xl border-2 ${videoSourceType === 'upload' ? 'bg-indigo-50 border-indigo-500' : 'bg-white border-gray-100'}`}
+                                    >
+                                        <View className="flex-row items-center">
+                                            <Upload size={18} color={videoSourceType === 'upload' ? '#4f46e5' : '#9ca3af'} />
+                                            <Text className={`font-bold ml-2 ${videoSourceType === 'upload' ? 'text-indigo-900' : 'text-gray-500'}`}>Upload File</Text>
+                                        </View>
+                                    </TouchableOpacity>
                                 </View>
-                                <Text className="text-gray-400 text-xs mt-2">Paste the full YouTube video link here.</Text>
+
+                                {videoSourceType === 'link' ? (
+                                    <View>
+                                        <Text className="text-gray-600 font-medium mb-2">YouTube Video URL *</Text>
+                                        <View className="flex-row items-center bg-gray-50 border border-gray-200 rounded-xl px-4">
+                                            <LinkIcon size={20} color="#9CA3AF" />
+                                            <TextInput
+                                                className="flex-1 p-4 text-gray-800"
+                                                placeholder="https://youtube.com/..."
+                                                value={formData.contentUrl}
+                                                onChangeText={(text) => setFormData({ ...formData, contentUrl: text })}
+                                                autoCapitalize="none"
+                                            />
+                                        </View>
+                                        <Text className="text-gray-400 text-xs mt-2">Paste the full YouTube video link here.</Text>
+                                    </View>
+                                ) : (
+                                    <View>
+                                        <Text className="text-gray-600 font-medium mb-2">Upload Video File *</Text>
+                                        <TouchableOpacity
+                                            onPress={pickVideo}
+                                            className="bg-indigo-50 border-2 border-dashed border-indigo-300 rounded-2xl p-8 items-center"
+                                        >
+                                            <View className="w-16 h-16 bg-white rounded-full items-center justify-center shadow-sm mb-3">
+                                                <VideoIcon size={32} color="#6366f1" />
+                                            </View>
+                                            <Text className="text-indigo-900 font-bold mb-1 text-center">
+                                                {selectedVideoFile ? selectedVideoFile.name : 'Tap to select video'}
+                                            </Text>
+                                            <Text className="text-indigo-400 text-xs text-center">
+                                                {selectedVideoFile
+                                                    ? `(${(selectedVideoFile.size / 1024 / 1024).toFixed(2)} MB)`
+                                                    : 'Supported formats: MP4, MOV, AVI (Max: 100MB)'}
+                                            </Text>
+                                        </TouchableOpacity>
+                                        {uploading && (
+                                            <View className="mt-4 flex-row items-center justify-center">
+                                                <ActivityIndicator size="small" color="#6366f1" />
+                                                <Text className="text-indigo-600 ml-2 font-medium">Uploading video content...</Text>
+                                            </View>
+                                        )}
+                                    </View>
+                                )}
                             </View>
                         ) : (
                             <View>
