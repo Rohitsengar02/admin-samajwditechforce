@@ -26,7 +26,8 @@ import {
     BellRing,
     Inbox,
     Calendar,
-    TrendingUp
+    TrendingUp,
+    Share2
 } from 'lucide-react-native';
 
 interface MenuItem {
@@ -41,6 +42,7 @@ const MENU_ITEMS: MenuItem[] = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/(admin)/dashboard', gradient: ['#4F46E5', '#4338ca'], iconColor: '#4F46E5' },
     { name: 'All Users', icon: Users, path: '/(admin)/users', gradient: ['#4F46E5', '#4338ca'], iconColor: '#4F46E5' },
     { name: 'Leaderboard', icon: TrendingUp, path: '/(admin)/leaderboard', gradient: ['#f59e0b', '#d97706'], iconColor: '#f59e0b' },
+    { name: 'Refer & Earn', icon: Share2, path: '/(admin)/refer-earn', gradient: ['#059669', '#047857'], iconColor: '#059669' },
     { name: 'Home Builder', icon: Home, path: '/(admin)/home-setup', gradient: ['#E11D48', '#BE123C'], iconColor: '#E11D48' },
     { name: 'Members', icon: Users, path: '/(admin)/members', gradient: ['#EC4899', '#DB2777'], iconColor: '#EC4899' },
     { name: 'Digital IDs', icon: CreditCard, path: '/(admin)/digital-id', gradient: ['#8B5CF6', '#7C3AED'], iconColor: '#8B5CF6' },
