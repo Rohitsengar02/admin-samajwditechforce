@@ -157,6 +157,11 @@ export default function VerificationsPage() {
                             </View>
 
                             <View className="p-4 space-y-3">
+                                {/* Email */}
+                                <View className="flex-row items-center">
+                                    <User size={16} color="#6B7280" className="mr-2" />
+                                    <Text className="text-gray-600 flex-1">Email: <Text className="font-semibold text-gray-900">{user.email || 'N/A'}</Text></Text>
+                                </View>
                                 <View className="flex-row items-center">
                                     <MapPin size={16} color="#6B7280" className="mr-2" />
                                     <Text className="text-gray-600 flex-1">Vidhan Sabha: <Text className="font-semibold text-gray-900">{user.vidhanSabha || 'N/A'}</Text></Text>
@@ -168,6 +173,21 @@ export default function VerificationsPage() {
                                 <View className="flex-row items-center">
                                     <User size={16} color="#6B7280" className="mr-2" />
                                     <Text className="text-gray-600 flex-1">Party Member: <Text className="font-semibold text-gray-900">{user.isPartyMember} ({user.partyRole || 'No Role'})</Text></Text>
+                                </View>
+                                {/* Party Joining Date */}
+                                <View className="flex-row items-center">
+                                    <Calendar size={16} color="#6B7280" className="mr-2" />
+                                    <Text className="text-gray-600 flex-1">Party Joining Date: <Text className="font-semibold text-gray-900">{user.partyJoiningDate || 'N/A'}</Text></Text>
+                                </View>
+                                {/* Election Preparation */}
+                                <View className="flex-row items-center">
+                                    <Shield size={16} color="#6B7280" className="mr-2" />
+                                    <Text className="text-gray-600 flex-1">Election Preparation: <Text className="font-semibold text-gray-900">{user.electionPreparation || 'Not Specified'}</Text></Text>
+                                </View>
+                                {/* Qualification */}
+                                <View className="flex-row items-center">
+                                    <User size={16} color="#6B7280" className="mr-2" />
+                                    <Text className="text-gray-600 flex-1">Qualification: <Text className="font-semibold text-gray-900">{user.qualification || 'N/A'}</Text></Text>
                                 </View>
                                 <View className="flex-row items-center">
                                     <Calendar size={16} color="#6B7280" className="mr-2" />
