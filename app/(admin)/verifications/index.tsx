@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Platform, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Shield, Check, X, MapPin, User, Phone, Calendar, Facebook, Instagram, Youtube, Twitter } from 'lucide-react-native';
+import { Shield, Check, X, MapPin, User, Phone, Calendar, Facebook, Instagram, Youtube, Twitter, Search, Filter } from 'lucide-react-native';
+import { TextInput } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getApiUrl } from '../../../utils/api';
 
@@ -24,6 +25,7 @@ const AnimatedBubble = ({ size, top, left }: { size: number; top: number; left: 
 
 export default function VerificationsPage() {
     const [verifications, setVerifications] = useState<any[]>([]);
+    const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
     const router = useRouter();
 
@@ -108,6 +110,12 @@ export default function VerificationsPage() {
         }
     };
 
+    const filteredVerifications = verifications.filter(v =>
+        v.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        v.phone?.includes(searchQuery) ||
+        v.vidhanSabha?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
     if (loading) {
         return (
             <View className="flex-1 justify-center items-center bg-gray-50">
@@ -129,17 +137,31 @@ export default function VerificationsPage() {
                             <Text className="text-indigo-200 text-sm">Review pending member requests</Text>
                         </View>
                     </View>
+
+                    <View className="flex-row items-center bg-white/20 backdrop-blur-md px-4 rounded-2xl border border-white/30">
+                        <Search size={20} color="white" />
+                        <TextInput
+                            className="flex-1 py-3 px-3 text-white"
+                            placeholder="Search verification requests..."
+                            placeholderTextColor="rgba(255,255,255,0.6)"
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                        />
+                        <TouchableOpacity className="bg-white/20 p-2 rounded-xl">
+                            <Filter size={18} color="white" />
+                        </TouchableOpacity>
+                    </View>
                 </LinearGradient>
             </View>
 
             <View className="px-4 pb-10">
-                {verifications.length === 0 ? (
+                {filteredVerifications.length === 0 ? (
                     <View className="items-center py-10">
                         <Shield size={48} color="#9CA3AF" />
-                        <Text className="text-gray-500 mt-4 text-lg">No pending verifications</Text>
+                        <Text className="text-gray-500 mt-4 text-lg">No matching requests found</Text>
                     </View>
                 ) : (
-                    verifications.map((user) => (
+                    filteredVerifications.map((user) => (
                         <View key={user._id} className="bg-white rounded-2xl shadow-sm border border-gray-100 mb-4 overflow-hidden">
                             <View className="p-4 border-b border-gray-100 bg-gray-50/50 flex-row justify-between items-center">
                                 <View className="flex-row items-center">

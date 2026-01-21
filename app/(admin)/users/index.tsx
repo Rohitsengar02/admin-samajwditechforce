@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, Image, Alert, Modal, TextInput, ScrollView, Platform } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, Image, Alert, Modal, TextInput, ScrollView, Platform, Dimensions } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -8,10 +8,12 @@ import { getApiUrl } from '../../../utils/api';
 
 const SP_RED = '#E30512';
 const SP_GREEN = '#009933';
+const screenWidth = Dimensions.get('window').width;
 
 export default function UsersScreen() {
     const router = useRouter();
     const [users, setUsers] = useState<any[]>([]);
+    const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
@@ -71,6 +73,14 @@ export default function UsersScreen() {
             volunteers: users.filter(u => u.isVolunteer).length
         };
     }, [users]);
+
+    const filteredUsers = useMemo(() => {
+        return users.filter(u =>
+            u.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            u.phone?.includes(searchQuery) ||
+            u.email?.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }, [users, searchQuery]);
 
     const handleDelete = (item: any) => {
         const type = item.isVolunteer ? 'volunteer' : 'user';
@@ -203,7 +213,27 @@ export default function UsersScreen() {
                     <Text style={styles.statLabel}>App Users</Text>
                 </LinearGradient>
             </View>
+
+            <View style={{ marginTop: 20 }}>
+                <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#1e293b', marginBottom: 12 }}>
+                    All Users ({filteredUsers.length})
+                </Text>
+            </View>
         </View>
+    );
+
+    const AnimatedBubble = ({ size, top, left }: { size: number; top: number; left: number }) => (
+        <View
+            style={{
+                position: 'absolute',
+                width: size,
+                height: size,
+                top, left,
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                borderRadius: size / 2,
+                opacity: 0.6,
+            }}
+        />
     );
 
     const renderUserItem = ({ item }: { item: any }) => (
@@ -277,12 +307,33 @@ export default function UsersScreen() {
 
     return (
         <View style={styles.container}>
-            <LinearGradient colors={[SP_RED, '#b91c1c']} style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>All Users</Text>
-            </LinearGradient>
+            <View style={styles.headerWrapper}>
+                <LinearGradient colors={[SP_RED, '#b91c1c']} style={styles.headerGradient}>
+                    <AnimatedBubble size={120} top={-30} left={screenWidth - 100} />
+                    <AnimatedBubble size={80} top={40} left={20} />
+
+                    <View style={styles.headerRow}>
+                        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+                        </TouchableOpacity>
+                        <Text style={styles.headerTitle}>All Users</Text>
+                    </View>
+
+                    <View style={styles.searchContainer}>
+                        <MaterialCommunityIcons name="magnify" size={22} color="rgba(255,255,255,0.7)" />
+                        <TextInput
+                            style={styles.searchInput}
+                            placeholder="Search by name, phone or email..."
+                            placeholderTextColor="rgba(255,255,255,0.6)"
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                        />
+                        <TouchableOpacity style={styles.filterChip}>
+                            <MaterialCommunityIcons name="filter-variant" size={20} color="white" />
+                        </TouchableOpacity>
+                    </View>
+                </LinearGradient>
+            </View>
 
             {loading ? (
                 <View style={styles.loadingContainer}>
@@ -290,7 +341,7 @@ export default function UsersScreen() {
                 </View>
             ) : (
                 <FlatList
-                    data={users}
+                    data={filteredUsers}
                     renderItem={renderUserItem}
                     keyExtractor={(item) => item._id}
                     contentContainerStyle={styles.listContent}
@@ -389,21 +440,53 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#f8fafc',
     },
-    header: {
+    headerWrapper: {
+        marginBottom: 20,
+        backgroundColor: '#f8fafc',
+    },
+    headerGradient: {
         paddingTop: 60,
-        paddingBottom: 20,
+        paddingBottom: 30,
         paddingHorizontal: 20,
+        borderBottomLeftRadius: 35,
+        borderBottomRightRadius: 35,
+        position: 'relative',
+        overflow: 'hidden',
+    },
+    headerRow: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 16,
+        marginBottom: 20,
     },
     backButton: {
         padding: 4,
     },
     headerTitle: {
-        fontSize: 20,
+        fontSize: 24,
         fontWeight: 'bold',
         color: '#fff',
+    },
+    searchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.15)',
+        borderRadius: 16,
+        paddingHorizontal: 12,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.2)',
+    },
+    searchInput: {
+        flex: 1,
+        height: 48,
+        color: '#fff',
+        fontSize: 15,
+        paddingHorizontal: 8,
+    },
+    filterChip: {
+        backgroundColor: 'rgba(99, 102, 241, 0.2)',
+        padding: 6,
+        borderRadius: 10,
     },
     loadingContainer: {
         flex: 1,
