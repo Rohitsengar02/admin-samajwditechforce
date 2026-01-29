@@ -302,13 +302,51 @@ export default function MembersPage() {
                             <Text className="text-white text-3xl font-bold mb-2">Verified Members</Text>
                             <Text className="text-indigo-200 text-sm">Manage all verified party members</Text>
                         </View>
-                        <TouchableOpacity
-                            onPress={() => router.push('/(admin)/members/add' as any)}
-                            className="bg-white px-4 py-3 rounded-2xl flex-row items-center shadow-lg"
-                        >
-                            <Plus size={20} color="#4F46E5" />
-                            <Text className="text-indigo-600 font-bold ml-2">Add</Text>
-                        </TouchableOpacity>
+                        <View className="flex-row">
+                            <TouchableOpacity
+                                onPress={() => router.push('/(admin)/members/add' as any)}
+                                className="bg-white px-4 py-3 rounded-2xl flex-row items-center shadow-lg"
+                            >
+                                <Plus size={20} color="#4F46E5" />
+                                <Text className="text-indigo-600 font-bold ml-2">Add</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                onPress={() => {
+                                    const headers = ['Name', 'Phone', 'Email', 'Role', 'Status', 'Vidhan Sabha', 'Joined Date', 'Party Member', 'Qualification'];
+                                    const csvContent = [
+                                        headers.join(','),
+                                        ...members.map(m => [
+                                            `"${m.name || ''}"`,
+                                            `"${m.phone || ''}"`,
+                                            `"${m.email || ''}"`,
+                                            `"${m.partyRole || ''}"`,
+                                            `"${m.verificationStatus || ''}"`,
+                                            `"${m.vidhanSabha || ''}"`,
+                                            `"${new Date(m.createdAt).toLocaleDateString()}"`,
+                                            `"${m.isPartyMember || 'No'}"`,
+                                            `"${m.qualification || ''}"`
+                                        ].join(','))
+                                    ].join('\n');
+
+                                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                                    const link = document.createElement('a');
+                                    if (link.download !== undefined) {
+                                        const url = URL.createObjectURL(blob);
+                                        link.setAttribute('href', url);
+                                        link.setAttribute('download', `members_export_${new Date().toISOString().split('T')[0]}.csv`);
+                                        link.style.visibility = 'hidden';
+                                        document.body.appendChild(link);
+                                        link.click();
+                                        document.body.removeChild(link);
+                                    }
+                                }}
+                                className="bg-white/20 px-4 py-3 rounded-2xl flex-row items-center ml-3 border border-white/30"
+                            >
+                                <TrendingUp size={20} color="white" style={{ transform: [{ rotate: '180deg' }] }} />
+                                <Text className="text-white font-bold ml-2">CSV</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
 
                     <View className="flex-row items-center bg-white/20 backdrop-blur-md px-4 rounded-2xl border border-white/30">
@@ -325,7 +363,7 @@ export default function MembersPage() {
                         </TouchableOpacity>
                     </View>
                 </LinearGradient>
-            </View>
+            </View >
 
             <View className="px-4">
                 <View className="flex-row flex-wrap -mx-2 mb-6">
@@ -365,6 +403,6 @@ export default function MembersPage() {
                     )}
                 </View>
             </View>
-        </ScrollView>
+        </ScrollView >
     );
 }
