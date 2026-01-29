@@ -194,13 +194,89 @@ export default function MemberDetailPage() {
                     </View>
                 </View>
 
-                {/* About */}
+                {/* Party Details */}
                 <View className="bg-white rounded-3xl p-6 shadow-lg mb-6">
-                    <Text className="text-gray-800 font-bold text-lg mb-3">About</Text>
-                    <Text className="text-gray-600 leading-6">
-                        {member.qualification ? `Qualification: ${member.qualification}\n` : ''}
-                        {member.socialMedia?.length > 0 ? `Social Media: ${member.socialMedia.join(', ')}` : 'No additional info'}
-                    </Text>
+                    <Text className="text-gray-800 font-bold text-lg mb-4">Party Details</Text>
+
+                    <View className="space-y-4">
+                        <View className="flex-row items-center">
+                            <View className="bg-orange-50 p-3 rounded-xl mr-4">
+                                <Award size={18} color="#EA580C" />
+                            </View>
+                            <View className="flex-1">
+                                <Text className="text-gray-400 text-xs font-medium">Party Member</Text>
+                                <Text className="text-gray-800 font-semibold">
+                                    {member.isPartyMember || 'No'}
+                                    {member.partyRole ? ` (${member.partyRole})` : ''}
+                                </Text>
+                            </View>
+                        </View>
+
+                        <View className="flex-row items-center">
+                            <View className="bg-pink-50 p-3 rounded-xl mr-4">
+                                <Calendar size={18} color="#DB2777" />
+                            </View>
+                            <View className="flex-1">
+                                <Text className="text-gray-400 text-xs font-medium">Party Joining Date</Text>
+                                <Text className="text-gray-800 font-semibold">{member.partyJoiningDate || 'N/A'}</Text>
+                            </View>
+                        </View>
+
+                        <View className="flex-row items-center">
+                            <View className="bg-indigo-50 p-3 rounded-xl mr-4">
+                                <TrendingUp size={18} color="#4F46E5" />
+                            </View>
+                            <View className="flex-1">
+                                <Text className="text-gray-400 text-xs font-medium">Election Preparation</Text>
+                                <Text className="text-gray-800 font-semibold">{member.electionPreparation || 'Not Specified'}</Text>
+                            </View>
+                        </View>
+
+                        <View className="flex-row items-center">
+                            <View className="bg-teal-50 p-3 rounded-xl mr-4">
+                                <MapPin size={18} color="#0D9488" />
+                            </View>
+                            <View className="flex-1">
+                                <Text className="text-gray-400 text-xs font-medium">Visit Lucknow</Text>
+                                <Text className="text-gray-800 font-semibold">{member.canVisitLucknow || 'No'}</Text>
+                            </View>
+                        </View>
+                    </View>
+                </View>
+
+                {/* About & Social */}
+                <View className="bg-white rounded-3xl p-6 shadow-lg mb-6">
+                    <Text className="text-gray-800 font-bold text-lg mb-4">Additional Info</Text>
+
+                    <View className="space-y-4">
+                        <View className="flex-row items-center">
+                            <View className="bg-purple-50 p-3 rounded-xl mr-4">
+                                <Award size={18} color="#9333EA" />
+                            </View>
+                            <View className="flex-1">
+                                <Text className="text-gray-400 text-xs font-medium">Qualification</Text>
+                                <Text className="text-gray-800 font-semibold">{member.qualification || 'N/A'}</Text>
+                            </View>
+                        </View>
+
+                        {member.socialMedia && member.socialMedia.length > 0 && (
+                            <View>
+                                <View className="flex-row items-center mb-2">
+                                    <View className="bg-blue-50 p-3 rounded-xl mr-4">
+                                        <MessageCircle size={18} color="#2563EB" />
+                                    </View>
+                                    <Text className="text-gray-400 text-xs font-medium">Social Media</Text>
+                                </View>
+                                <View className="flex-row flex-wrap gap-2 pl-12">
+                                    {member.socialMedia.map((platform: string) => (
+                                        <View key={platform} className="bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200">
+                                            <Text className="text-gray-600 text-xs font-medium capitalize">{platform}</Text>
+                                        </View>
+                                    ))}
+                                </View>
+                            </View>
+                        )}
+                    </View>
                 </View>
 
                 {/* Recent Activity */}
