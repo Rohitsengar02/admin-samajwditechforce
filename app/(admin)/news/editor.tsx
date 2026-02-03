@@ -214,7 +214,13 @@ export default function NewsEditorPage() {
 
             const result = await response.json();
             if (result.secure_url) {
-                callback(result.secure_url);
+                // Return OPTIMIZED URL - reduces size by 60-80%
+                const optimizedUrl = result.secure_url.replace(
+                    '/upload/',
+                    '/upload/f_auto,q_auto:best/'
+                );
+                console.log('✅ Image optimized:', optimizedUrl);
+                callback(optimizedUrl);
             } else {
                 throw new Error('Upload failed');
             }

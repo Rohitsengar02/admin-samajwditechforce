@@ -118,6 +118,7 @@ export default function ReelsManager() {
             formData.append('upload_preset', UPLOAD_PRESET);
             formData.append('cloud_name', CLOUD_NAME);
             formData.append('resource_type', 'video');
+            // Note: Optimization is handled by Cloudinary upload preset (q_auto:best)
 
             setUploading(true);
             setUploadProgress(0);
@@ -144,7 +145,13 @@ export default function ReelsManager() {
             const result = await res.json();
 
             if (result.secure_url) {
-                return result.secure_url;
+                // Return the optimized URL with auto format/codec for delivery
+                const optimizedUrl = result.secure_url.replace(
+                    '/upload/',
+                    '/upload/f_auto,q_auto:best/'
+                );
+                console.log('✅ Video uploaded! Optimized URL:', optimizedUrl);
+                return optimizedUrl;
             } else {
                 console.error('Cloudinary Error:', result);
                 throw new Error('Video upload failed');
