@@ -15,10 +15,9 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
+import { uploadImageToAPI } from '../../../utils/upload';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5001/api';
-const CLOUDINARY_CLOUD_NAME = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME || 'ddfyebtvz';
-const CLOUDINARY_UPLOAD_PRESET = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'samajwadi_party';
 
 export default function CreateEvent() {
     const router = useRouter();
@@ -73,61 +72,23 @@ export default function CreateEvent() {
             });
 
             if (!result.canceled && result.assets[0]) {
-                uploadToCloudinary(result.assets[0].uri);
+                try {
+                    setUploading(true);
+                    const url = await uploadImageToAPI(result.assets[0].uri, 'events');
+                    if (url) {
+                        setFormData({ ...formData, image: url });
+                        showAlert('✅ Success', 'Image uploaded successfully!');
+                    }
+                } catch (error) {
+                    console.error('Error uploading image:', error);
+                    showAlert('Error', 'Failed to upload image');
+                } finally {
+                    setUploading(false);
+                }
             }
         } catch (error) {
             console.error('Error picking image:', error);
             showAlert('Error', 'Failed to pick image');
-        }
-    };
-
-    const uploadToCloudinary = async (uri: string) => {
-        try {
-            setUploading(true);
-
-            // Convert image to base64
-            const response = await fetch(uri);
-            const blob = await response.blob();
-            const reader = new FileReader();
-
-            reader.onloadend = async () => {
-                const base64data = reader.result;
-
-                try {
-                    const token = await AsyncStorage.getItem('adminToken');
-
-                    const uploadResponse = await fetch(`${API_URL}/upload/image`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`,
-                        },
-                        body: JSON.stringify({
-                            image: base64data,
-                            folder: 'events'
-                        }),
-                    });
-
-                    const data = await uploadResponse.json();
-
-                    if (data.success) {
-                        setFormData({ ...formData, image: data.data.url });
-                        showAlert('✅ Success', 'Image uploaded successfully!');
-                    } else {
-                        showAlert('Error', data.message || 'Failed to upload image');
-                    }
-                } catch (error) {
-                    console.error('Error uploading to backend:', error);
-                    showAlert('Error', 'Failed to upload image');
-                }
-            };
-
-            reader.readAsDataURL(blob);
-        } catch (error) {
-            console.error('Error processing image:', error);
-            showAlert('Error', 'Failed to process image');
-        } finally {
-            setUploading(false);
         }
     };
 

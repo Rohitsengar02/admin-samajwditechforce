@@ -213,7 +213,7 @@ export default function About() {
                             <Text style={styles.techText}>MongoDB</Text>
                         </View>
                         <View style={styles.techBadge}>
-                            <Text style={styles.techText}>Cloudinary</Text>
+                            <Text style={styles.techText}>Cloudflare R2</Text>
                         </View>
                         <View style={styles.techBadge}>
                             <Text style={styles.techText}>AI/ML</Text>

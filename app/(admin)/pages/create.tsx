@@ -10,8 +10,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { getApiUrl } from '../../../utils/api';
 
 const API_URL = `${getApiUrl()}/pages`;
-const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dssmutzly/image/upload';
-const UPLOAD_PRESET = 'multimallpro';
+import { uploadBase64ToAPI } from '../../../utils/upload';
 
 const PAGE_TYPES = [
     { value: 'static', label: 'Static Page', icon: FileText, description: 'Simple content page', color: '#3b82f6' },
@@ -93,31 +92,9 @@ export default function PageCreate() {
             .replace(/^-+|-+$/g, '');
     };
 
-    const uploadToCloudinary = async (base64: string) => {
-        try {
-            setUploading(true);
-            const data = new FormData();
-            data.append('file', `data:image/jpeg;base64,${base64}`);
-            data.append('upload_preset', UPLOAD_PRESET);
-
-            const response = await fetch(CLOUDINARY_URL, {
-                method: 'POST',
-                body: data,
-            });
-
-            const result = await response.json();
-            return result.secure_url || null;
-        } catch (error) {
-            console.error('Error uploading:', error);
-            Alert.alert('Error', 'Failed to upload image');
-            return null;
-        } finally {
-            setUploading(false);
-        }
-    };
-
     const pickImage = async () => {
         try {
+            setUploading(true);
             const result = await ImagePicker.launchImageLibraryAsync({
                 mediaTypes: ImagePicker.MediaTypeOptions.Images,
                 allowsEditing: true,
@@ -126,13 +103,16 @@ export default function PageCreate() {
             });
 
             if (!result.canceled && result.assets[0].base64) {
-                const url = await uploadToCloudinary(result.assets[0].base64);
+                const url = await uploadBase64ToAPI(result.assets[0].base64, 'pages');
                 if (url) {
                     setFormData(prev => ({ ...prev, headerImage: url }));
                 }
             }
         } catch (error) {
             console.error('Error picking image:', error);
+            Alert.alert('Error', 'Failed to upload image');
+        } finally {
+            setUploading(false);
         }
     };
 

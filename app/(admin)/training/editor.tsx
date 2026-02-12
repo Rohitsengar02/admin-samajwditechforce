@@ -8,16 +8,14 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { getApiUrl } from '../../../utils/api';
+import { uploadBase64ToAPI, uploadVideoToAPI } from '../../../utils/upload';
+
 
 const screenWidth = Dimensions.get('window').width;
 
 const AnimatedBubble = ({ size, top, left }: { size: number; top: number; left: number }) => (
     <View style={{ position: 'absolute', width: size, height: size, top, left, backgroundColor: 'rgba(255, 255, 255, 0.1)', borderRadius: size / 2, opacity: 0.6 }} />
 );
-
-const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dssmutzly/image/upload';
-const CLOUDINARY_VIDEO_URL = 'https://api.cloudinary.com/v1_1/dssmutzly/video/upload';
-const UPLOAD_PRESET = 'multimallpro';
 
 export default function ModuleEditorPage() {
     const router = useRouter();
@@ -63,7 +61,7 @@ export default function ModuleEditorPage() {
                 });
 
                 // Determine source type from URL
-                if (url.includes('cloudinary.com/video') || url.includes('.mp4')) {
+                if (url.includes('.mp4') || url.includes('/video/')) {
                     setVideoSourceType('upload');
                 } else {
                     setVideoSourceType('link');
@@ -80,71 +78,6 @@ export default function ModuleEditorPage() {
         }
     };
 
-    const uploadToCloudinary = async (base64: string) => {
-        try {
-            setUploading(true);
-            const data = new FormData();
-            data.append('file', `data:image/jpeg;base64,${base64}`);
-            data.append('upload_preset', UPLOAD_PRESET);
-
-            const response = await fetch(CLOUDINARY_URL, {
-                method: 'POST',
-                body: data,
-            });
-
-            const result = await response.json();
-            if (result.secure_url) {
-                return result.secure_url;
-            } else {
-                throw new Error('Upload failed');
-            }
-        } catch (error) {
-            console.error('Error uploading to Cloudinary:', error);
-            Alert.alert('Error', 'Failed to upload file');
-            return null;
-        } finally {
-            setUploading(false);
-        }
-    };
-
-    const uploadVideoToCloudinary = async (videoUri: string) => {
-        const formData = new FormData();
-        try {
-            if (Platform.OS === 'web') {
-                const response = await fetch(videoUri);
-                const blob = await response.blob();
-                formData.append('file', blob, 'training_video.mp4');
-            } else {
-                formData.append('file', {
-                    uri: videoUri,
-                    type: 'video/mp4',
-                    name: 'training_video.mp4',
-                } as any);
-            }
-
-            formData.append('upload_preset', UPLOAD_PRESET);
-            formData.append('resource_type', 'video');
-
-            setUploading(true);
-            const res = await fetch(CLOUDINARY_VIDEO_URL, {
-                method: 'POST',
-                body: formData,
-            });
-
-            const result = await res.json();
-            if (result.secure_url) {
-                return result.secure_url;
-            } else {
-                throw new Error('Video upload failed');
-            }
-        } catch (error) {
-            console.error('Video Upload Error:', error);
-            Alert.alert('Error', 'Failed to upload video');
-            return null;
-        } finally {
-            setUploading(false);
-        }
-    };
 
     const pickVideo = async () => {
         try {
@@ -177,9 +110,14 @@ export default function ModuleEditorPage() {
             });
 
             if (!result.canceled && result.assets[0].base64) {
-                const url = await uploadToCloudinary(result.assets[0].base64);
-                if (url) {
-                    setFormData(prev => ({ ...prev, contentUrl: url }));
+                setUploading(true);
+                try {
+                    const url = await uploadBase64ToAPI(result.assets[0].base64, 'training');
+                    if (url) {
+                        setFormData(prev => ({ ...prev, contentUrl: url }));
+                    }
+                } finally {
+                    setUploading(false);
                 }
             }
         } catch (error) {
@@ -251,7 +189,7 @@ export default function ModuleEditorPage() {
                 Alert.alert('Validation Error', 'Please enter YouTube URL');
                 return false;
             }
-            if (videoSourceType === 'upload' && !selectedVideoFile && !formData.contentUrl.includes('cloudinary')) {
+            if (videoSourceType === 'upload' && !selectedVideoFile && !formData.contentUrl.startsWith('http')) {
                 Alert.alert('Validation Error', 'Please upload a video file');
                 return false;
             }
@@ -271,12 +209,21 @@ export default function ModuleEditorPage() {
             let finalContentUrl = formData.contentUrl.trim();
 
             if (formData.type === 'video' && videoSourceType === 'upload' && selectedVideoFile) {
-                const uploadedUrl = await uploadVideoToCloudinary(selectedVideoFile.uri);
-                if (!uploadedUrl) {
+                setUploading(true);
+                try {
+                    const result = await uploadVideoToAPI(selectedVideoFile.uri, 'training');
+                    if (!result.url) {
+                        setLoading(false);
+                        return;
+                    }
+                    finalContentUrl = result.url;
+                } catch (uploadError) {
+                    Alert.alert('Error', 'Failed to upload video');
                     setLoading(false);
                     return;
+                } finally {
+                    setUploading(false);
                 }
-                finalContentUrl = uploadedUrl;
             }
 
             const payload = {
@@ -671,7 +618,7 @@ export default function ModuleEditorPage() {
                                                 <VideoIcon size={32} color="#8B5CF6" />
                                             </View>
                                             <Text style={{ color: '#111827', fontWeight: 'bold', marginBottom: 4, textAlign: 'center' }}>
-                                                {selectedVideoFile ? selectedVideoFile.name : (formData.contentUrl.includes('cloudinary') ? 'Video already uploaded' : 'Tap to select video')}
+                                                {selectedVideoFile ? selectedVideoFile.name : (formData.contentUrl.startsWith('http') ? 'Video already uploaded' : 'Tap to select video')}
                                             </Text>
                                             <Text style={{ color: '#8B5CF6', fontSize: 12, textAlign: 'center' }}>
                                                 {selectedVideoFile
@@ -685,7 +632,7 @@ export default function ModuleEditorPage() {
                                                 <Text style={{ color: '#7c3aed', marginLeft: 8, fontWeight: '600' }}>Uploading video content...</Text>
                                             </View>
                                         )}
-                                        {formData.contentUrl && formData.contentUrl.includes('cloudinary') && !selectedVideoFile && (
+                                        {formData.contentUrl && formData.contentUrl.startsWith('http') && !selectedVideoFile && (
                                             <View style={{ marginTop: 12, backgroundColor: '#f0fdf4', padding: 8, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
                                                 <CheckCircle size={14} color="#16a34a" />
                                                 <Text style={{ color: '#16a34a', fontSize: 12, marginLeft: 6, fontWeight: '600' }}>Current content is an uploaded video</Text>
@@ -738,7 +685,7 @@ export default function ModuleEditorPage() {
                                         </>
                                     )}
                                 </TouchableOpacity>
-                                {formData.contentUrl && formData.contentUrl.includes('cloudinary') && (
+                                {formData.contentUrl && formData.contentUrl.startsWith('http') && (
                                     <Text style={{ color: '#059669', fontSize: 12, marginTop: 8, textAlign: 'center' }}>
                                         ✅ File uploaded successfully!
                                     </Text>

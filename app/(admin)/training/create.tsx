@@ -8,16 +8,14 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { getApiUrl } from '../../../utils/api';
+import { uploadBase64ToAPI, uploadVideoToAPI } from '../../../utils/upload';
+
 
 const screenWidth = Dimensions.get('window').width;
 
 const AnimatedBubble = ({ size, top, left }: { size: number; top: number; left: number }) => (
     <View style={{ position: 'absolute', width: size, height: size, top, left, backgroundColor: 'rgba(255, 255, 255, 0.1)', borderRadius: size / 2, opacity: 0.6 }} />
 );
-
-const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dssmutzly/image/upload';
-const CLOUDINARY_VIDEO_URL = 'https://api.cloudinary.com/v1_1/dssmutzly/video/upload';
-const UPLOAD_PRESET = 'multimallpro';
 
 export default function CreateModulePage() {
     const router = useRouter();
@@ -37,71 +35,6 @@ export default function CreateModulePage() {
 
     const API_URL = `${getApiUrl()}/training`;
 
-    const uploadToCloudinary = async (base64: string) => {
-        try {
-            setUploading(true);
-            const data = new FormData();
-            data.append('file', `data:image/jpeg;base64,${base64}`);
-            data.append('upload_preset', UPLOAD_PRESET);
-
-            const response = await fetch(CLOUDINARY_URL, {
-                method: 'POST',
-                body: data,
-            });
-
-            const result = await response.json();
-            if (result.secure_url) {
-                return result.secure_url;
-            } else {
-                throw new Error('Upload failed');
-            }
-        } catch (error) {
-            console.error('Error uploading to Cloudinary:', error);
-            Alert.alert('Error', 'Failed to upload file');
-            return null;
-        } finally {
-            setUploading(false);
-        }
-    };
-
-    const uploadVideoToCloudinary = async (videoUri: string) => {
-        const formData = new FormData();
-        try {
-            if (Platform.OS === 'web') {
-                const response = await fetch(videoUri);
-                const blob = await response.blob();
-                formData.append('file', blob, 'training_video.mp4');
-            } else {
-                formData.append('file', {
-                    uri: videoUri,
-                    type: 'video/mp4',
-                    name: 'training_video.mp4',
-                } as any);
-            }
-
-            formData.append('upload_preset', UPLOAD_PRESET);
-            formData.append('resource_type', 'video');
-
-            setUploading(true);
-            const res = await fetch(CLOUDINARY_VIDEO_URL, {
-                method: 'POST',
-                body: formData,
-            });
-
-            const result = await res.json();
-            if (result.secure_url) {
-                return result.secure_url;
-            } else {
-                throw new Error('Video upload failed');
-            }
-        } catch (error) {
-            console.error('Video Upload Error:', error);
-            Alert.alert('Error', 'Failed to upload video');
-            return null;
-        } finally {
-            setUploading(false);
-        }
-    };
 
     const pickVideo = async () => {
         try {
@@ -134,9 +67,14 @@ export default function CreateModulePage() {
             });
 
             if (!result.canceled && result.assets[0].base64) {
-                const url = await uploadToCloudinary(result.assets[0].base64);
-                if (url) {
-                    setFormData(prev => ({ ...prev, contentUrl: url }));
+                setUploading(true);
+                try {
+                    const url = await uploadBase64ToAPI(result.assets[0].base64, 'training');
+                    if (url) {
+                        setFormData(prev => ({ ...prev, contentUrl: url }));
+                    }
+                } finally {
+                    setUploading(false);
                 }
             }
         } catch (error) {
@@ -179,12 +117,21 @@ export default function CreateModulePage() {
             let finalContentUrl = formData.contentUrl.trim();
 
             if (formData.type === 'video' && videoSourceType === 'upload' && selectedVideoFile) {
-                const uploadedUrl = await uploadVideoToCloudinary(selectedVideoFile.uri);
-                if (!uploadedUrl) {
+                setUploading(true);
+                try {
+                    const result = await uploadVideoToAPI(selectedVideoFile.uri, 'training');
+                    if (!result.url) {
+                        setLoading(false);
+                        return;
+                    }
+                    finalContentUrl = result.url;
+                } catch (uploadError) {
+                    Alert.alert('Error', 'Failed to upload video');
                     setLoading(false);
                     return;
+                } finally {
+                    setUploading(false);
                 }
-                finalContentUrl = uploadedUrl;
             }
 
             const payload = {
@@ -473,7 +420,7 @@ export default function CreateModulePage() {
                                         </>
                                     )}
                                 </TouchableOpacity>
-                                {formData.contentUrl && formData.contentUrl.includes('cloudinary') && (
+                                {formData.contentUrl && formData.contentUrl.startsWith('http') && (
                                     <Text className="text-green-600 text-xs mt-2 text-center">File uploaded successfully!</Text>
                                 )}
                             </View>

@@ -15,8 +15,7 @@ const AnimatedBubble = ({ size, top, left }: { size: number; top: number; left: 
 );
 
 const API_URL = `${getApiUrl()}/news`;
-const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dssmutzly/image/upload';
-const UPLOAD_PRESET = 'multimallpro';
+import { uploadBase64ToAPI } from '../../../utils/upload';
 
 
 type BlockType = 'heading' | 'paragraph' | 'image' | 'list';
@@ -183,6 +182,7 @@ export default function NewsEditorPage() {
 
     const pickImage = async (callback: (url: string) => void) => {
         try {
+            setUploading(true);
             const result = await ImagePicker.launchImageLibraryAsync({
                 mediaTypes: ImagePicker.MediaTypeOptions.Images,
                 allowsEditing: true,
@@ -192,37 +192,11 @@ export default function NewsEditorPage() {
             });
 
             if (!result.canceled && result.assets[0].base64) {
-                uploadToCloudinary(result.assets[0].base64, callback);
-            }
-        } catch (error) {
-            console.error('Error picking image:', error);
-            Alert.alert('Error', 'Failed to pick image');
-        }
-    };
-
-    const uploadToCloudinary = async (base64: string, callback: (url: string) => void) => {
-        try {
-            setUploading(true);
-            const data = new FormData();
-            data.append('file', `data:image/jpeg;base64,${base64}`);
-            data.append('upload_preset', UPLOAD_PRESET);
-
-            const response = await fetch(CLOUDINARY_URL, {
-                method: 'POST',
-                body: data,
-            });
-
-            const result = await response.json();
-            if (result.secure_url) {
-                // Return OPTIMIZED URL - reduces size by 60-80%
-                const optimizedUrl = result.secure_url.replace(
-                    '/upload/',
-                    '/upload/f_auto,q_auto:best/'
-                );
-                console.log('✅ Image optimized:', optimizedUrl);
-                callback(optimizedUrl);
-            } else {
-                throw new Error('Upload failed');
+                const url = await uploadBase64ToAPI(result.assets[0].base64, 'news');
+                if (url) {
+                    console.log('✅ Image uploaded to R2:', url);
+                    callback(url);
+                }
             }
         } catch (error) {
             console.error('Error uploading image:', error);

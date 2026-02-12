@@ -5,37 +5,10 @@ import { Save, Edit2, ArrowLeft, Star, TrendingUp, User, History, Grid, Layout, 
 
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import { uploadImageToAPI } from '../../../utils/upload';
+import { getApiUrl } from '../../../utils/api';
 
-const API_URL = Platform.OS === 'android' ? 'http://192.168.1.38:5001/api' : (Platform.OS === 'ios' ? 'http://localhost:5001/api' : (process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5001/api'));
-
-// Cloudinary
-const CLOUDINARY_CLOUD_NAME = 'dssmutzly';
-const CLOUDINARY_UPLOAD_PRESET = 'multimallpro';
-const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
-
-const uploadToCloudinary = async (imageUri: string): Promise<string> => {
-    try {
-        const formData = new FormData();
-        if (Platform.OS === 'web') {
-            const response = await fetch(imageUri);
-            const blob = await response.blob();
-            formData.append('file', blob);
-        } else {
-            const filename = imageUri.split('/').pop() || `upload_${Date.now()}.jpg`;
-            const match = /\.(\w+)$/.exec(filename);
-            const type = match ? `image/${match[1]}` : 'image/jpeg';
-            formData.append('file', { uri: imageUri, name: filename, type } as any);
-        }
-        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-        const res = await fetch(CLOUDINARY_UPLOAD_URL, { method: 'POST', body: formData });
-        const data = await res.json();
-        if (data.secure_url) return data.secure_url;
-        throw new Error('Upload failed');
-    } catch (error) {
-        console.error(error);
-        return '';
-    }
-};
+const API_URL = getApiUrl();
 
 // Default Data Structure
 const DEFAULT_CONTENT = [
@@ -393,7 +366,7 @@ export default function HomeManager() {
 
         if (!result.canceled) {
             setLoading(true);
-            const url = await uploadToCloudinary(result.assets[0].uri);
+            const url = await uploadImageToAPI(result.assets[0].uri, 'home');
             setLoading(false);
             if (url) {
                 if (itemIndex !== undefined) {
@@ -915,7 +888,7 @@ export default function HomeManager() {
                                             }).then(async (result) => {
                                                 if (!result.canceled) {
                                                     setLoading(true);
-                                                    const url = await uploadToCloudinary(result.assets[0].uri);
+                                                    const url = await uploadImageToAPI(result.assets[0].uri, 'home');
                                                     setLoading(false);
                                                     if (url) {
                                                         const leaders = [...editData.leaders];

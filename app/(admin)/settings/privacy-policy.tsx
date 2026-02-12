@@ -130,7 +130,7 @@ export default function PrivacyPolicy() {
                     </Text>
                     <View style={styles.bulletPoint}>
                         <MaterialCommunityIcons name="cloud" size={16} color={SP_GREEN} />
-                        <Text style={styles.bulletText}>Cloudinary - For media storage and management</Text>
+                        <Text style={styles.bulletText}>Cloudflare R2 - For media storage and management</Text>
                     </View>
                     <View style={styles.bulletPoint}>
                         <MaterialCommunityIcons name="cloud" size={16} color={SP_GREEN} />

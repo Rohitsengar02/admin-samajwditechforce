@@ -19,74 +19,12 @@ import { GALLERY_COMPONENTS, GALLERY_TEMPLATES } from '../../../components/galle
 import Gallery1 from '../../../components/galleryTemplates/Gallery1';
 import Gallery2 from '../../../components/galleryTemplates/Gallery2';
 import { getApiUrl } from '../../../utils/api';
+import { uploadImageToAPI } from '../../../utils/upload';
 
 const { width } = Dimensions.get('window');
 
 const API_URL = `${getApiUrl()}/pages`;
 
-// Cloudinary Configuration
-const CLOUDINARY_CLOUD_NAME = 'dssmutzly';
-const CLOUDINARY_UPLOAD_PRESET = 'multimallpro';
-const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
-
-// Upload image to Cloudinary with OPTIMIZATION
-const uploadToCloudinary = async (imageUri: string): Promise<string> => {
-    try {
-        console.log('Starting upload for:', imageUri);
-
-        const formData = new FormData();
-
-        if (Platform.OS === 'web') {
-            // For web, fetch the blob and append
-            const response = await fetch(imageUri);
-            const blob = await response.blob();
-            formData.append('file', blob);
-        } else {
-            // For mobile, create proper file object
-            const filename = imageUri.split('/').pop() || `upload_${Date.now()}.jpg`;
-            const match = /\.(\w+)$/.exec(filename);
-            const type = match ? `image/${match[1]}` : 'image/jpeg';
-
-            formData.append('file', {
-                uri: imageUri,
-                name: filename,
-                type: type,
-            } as any);
-        }
-
-        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-
-        console.log('Uploading to Cloudinary...');
-        const uploadResponse = await fetch(CLOUDINARY_UPLOAD_URL, {
-            method: 'POST',
-            body: formData,
-        });
-
-        const data = await uploadResponse.json();
-        console.log('Cloudinary response:', data);
-
-        if (data.secure_url) {
-            // Return OPTIMIZED URL - reduces size by 60-80%
-            const optimizedUrl = data.secure_url.replace(
-                '/upload/',
-                '/upload/f_auto,q_auto:best/'
-            );
-            console.log('✅ Upload successful (optimized):', optimizedUrl);
-            return optimizedUrl;
-        }
-
-        if (data.error) {
-            console.error('Cloudinary error:', data.error);
-            throw new Error(data.error.message || JSON.stringify(data.error));
-        }
-
-        throw new Error('Upload failed - no URL returned');
-    } catch (error: any) {
-        console.error('Cloudinary upload error:', error);
-        console.error('Error details:', error.message);
-        throw error;
-    }
-};
 
 const HERO_COMPONENTS: any = {
     1: Hero1,
@@ -1717,8 +1655,8 @@ function CustomizePanel({ props, updateProp, onSave, sectionType }: any) {
                                     Alert.alert('Uploading...', 'Please wait while we upload your image');
 
                                     try {
-                                        // Upload to Cloudinary
-                                        const uploadedUrl = await uploadToCloudinary(imageUri);
+                                        // Upload to R2 via backend
+                                        const uploadedUrl = await uploadImageToAPI(imageUri, 'pages');
                                         updateProp('imageUrl', uploadedUrl);
                                         Alert.alert('Success', 'Image uploaded successfully!');
                                     } catch (error) {
@@ -1768,12 +1706,12 @@ function CustomizePanel({ props, updateProp, onSave, sectionType }: any) {
                         }}
                         value={props.imageUrl}
                         onChangeText={(text) => updateProp('imageUrl', text)}
-                        placeholder="https://res.cloudinary.com/..."
+                        placeholder="https://your-domain.com/..."
                         multiline
                     />
 
-                    <Text style={{ fontSize: 11, color: '#9ca3af', fontStyle: 'italic' }}>
-                        Use the upload button above or paste a Cloudinary URL
+                    <Text style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>
+                        Use the upload button above or paste any image URL
                     </Text>
                 </View>
             )}
@@ -2101,10 +2039,10 @@ function CustomizePanel({ props, updateProp, onSave, sectionType }: any) {
                                                     const imageUri = result.assets[0].uri;
                                                     Alert.alert('Uploading...', 'Please wait while we upload your image');
 
-                                                    const cloudinaryUrl = await uploadToCloudinary(imageUri);
-                                                    if (cloudinaryUrl) {
+                                                    const r2Url = await uploadImageToAPI(imageUri, 'pages');
+                                                    if (r2Url) {
                                                         const newImages = [...props.images];
-                                                        newImages[index] = { ...newImages[index], url: cloudinaryUrl };
+                                                        newImages[index] = { ...newImages[index], url: r2Url };
                                                         updateProp('images', newImages);
                                                         Alert.alert('Success', 'Image uploaded successfully!');
                                                     }

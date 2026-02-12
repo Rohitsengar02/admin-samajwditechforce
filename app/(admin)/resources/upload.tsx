@@ -12,8 +12,7 @@ const AnimatedBubble = ({ size, top, left }: { size: number; top: number; left: 
 );
 
 const API_URL = `${getApiUrl()}/resources`;
-const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dssmutzly/image/upload';
-const UPLOAD_PRESET = 'multimallpro';
+import { uploadBase64ToAPI } from '../../../utils/upload';
 
 export default function UploadPage() {
     const router = useRouter();
@@ -68,35 +67,9 @@ export default function UploadPage() {
         }
     };
 
-    const uploadToCloudinary = async (base64: string) => {
-        try {
-            setUploading(true);
-            const data = new FormData();
-            data.append('file', `data:image/jpeg;base64,${base64}`);
-            data.append('upload_preset', UPLOAD_PRESET);
-
-            const response = await fetch(CLOUDINARY_URL, {
-                method: 'POST',
-                body: data,
-            });
-
-            const result = await response.json();
-            if (result.secure_url) {
-                return result.secure_url;
-            } else {
-                throw new Error('Upload failed');
-            }
-        } catch (error) {
-            console.error('Error uploading to Cloudinary:', error);
-            Alert.alert('Error', 'Failed to upload file');
-            return null;
-        } finally {
-            setUploading(false);
-        }
-    };
-
     const pickFile = async () => {
         try {
+            setUploading(true);
             const result = await ImagePicker.launchImageLibraryAsync({
                 mediaTypes: ImagePicker.MediaTypeOptions.All,
                 allowsEditing: true,
@@ -105,7 +78,7 @@ export default function UploadPage() {
             });
 
             if (!result.canceled && result.assets[0].base64) {
-                const url = await uploadToCloudinary(result.assets[0].base64);
+                const url = await uploadBase64ToAPI(result.assets[0].base64, 'resources');
                 if (url) {
                     setFormData(prev => ({
                         ...prev,
@@ -118,7 +91,9 @@ export default function UploadPage() {
             }
         } catch (error) {
             console.error('Error picking file:', error);
-            Alert.alert('Error', 'Failed to pick file');
+            Alert.alert('Error', 'Failed to upload file');
+        } finally {
+            setUploading(false);
         }
     };
 

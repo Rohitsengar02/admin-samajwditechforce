@@ -6,17 +6,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as DocumentPicker from 'expo-document-picker';
 import { Video, ResizeMode } from 'expo-av';
 
-const getApiUrl = () => {
-    if (Platform.OS === 'android') return 'http://192.168.1.38:5001/api';
-    if (Platform.OS === 'ios') return 'http://localhost:5001/api';
-    const baseUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5001';
-    return baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
-};
+import { uploadVideoToAPI } from '../../../utils/upload';
+import { getApiUrl as getApiUrlUtil } from '../../../utils/api';
 
-// Cloudinary Configuration
-const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dssmutzly/video/upload";
-const UPLOAD_PRESET = "multimallpro";
-const CLOUD_NAME = "dssmutzly";
+const getApiUrl = () => {
+    return getApiUrlUtil();
+};
 
 export default function ReelsManager() {
     const [reels, setReels] = useState<any[]>([]);
@@ -38,13 +33,10 @@ export default function ReelsManager() {
         fetchReels();
     }, []);
 
-    // Generate thumbnail from Cloudinary video URL
+    // Generate thumbnail placeholder
     const getVideoThumbnail = (videoUrl: string) => {
-        if (videoUrl.includes('cloudinary.com')) {
-            // Transform Cloudinary URL to get thumbnail
-            return videoUrl.replace('/upload/', '/upload/so_0,w_300,h_200,c_fill/');
-        }
-        // Return placeholder for non-Cloudinary videos
+        // R2 doesn't auto-generate thumbnails like Cloudinary
+        // Return null to show placeholder icon
         return null;
     };
 
@@ -99,72 +91,6 @@ export default function ReelsManager() {
         }
     };
 
-    const uploadVideoToCloudinary = async (videoUri: string) => {
-        const formData = new FormData();
-
-        try {
-            if (Platform.OS === 'web') {
-                const response = await fetch(videoUri);
-                const blob = await response.blob();
-                formData.append('file', blob, 'reel_video.mp4');
-            } else {
-                formData.append('file', {
-                    uri: videoUri,
-                    type: 'video/mp4',
-                    name: 'reel_video.mp4',
-                } as any);
-            }
-
-            formData.append('upload_preset', UPLOAD_PRESET);
-            formData.append('cloud_name', CLOUD_NAME);
-            formData.append('resource_type', 'video');
-            // Note: Optimization is handled by Cloudinary upload preset (q_auto:best)
-
-            setUploading(true);
-            setUploadProgress(0);
-
-            // Simulate progress updates
-            const progressInterval = setInterval(() => {
-                setUploadProgress(prev => {
-                    if (prev >= 90) {
-                        clearInterval(progressInterval);
-                        return prev;
-                    }
-                    return prev + 10;
-                });
-            }, 500);
-
-            const res = await fetch(CLOUDINARY_URL, {
-                method: 'POST',
-                body: formData,
-            });
-
-            clearInterval(progressInterval);
-            setUploadProgress(100);
-
-            const result = await res.json();
-
-            if (result.secure_url) {
-                // Return the optimized URL with auto format/codec for delivery
-                const optimizedUrl = result.secure_url.replace(
-                    '/upload/',
-                    '/upload/f_auto,q_auto:best/'
-                );
-                console.log('✅ Video uploaded! Optimized URL:', optimizedUrl);
-                return optimizedUrl;
-            } else {
-                console.error('Cloudinary Error:', result);
-                throw new Error('Video upload failed');
-            }
-        } catch (error) {
-            console.error('Cloudinary Upload Error:', error);
-            return null;
-        } finally {
-            setUploading(false);
-            setUploadProgress(0);
-        }
-    };
-
     const handleAddReel = async () => {
         console.log('🔵 Upload button clicked!');
         console.log('Title:', newReel.title);
@@ -186,14 +112,31 @@ export default function ReelsManager() {
 
         try {
             setSubmitting(true);
-            console.log('📤 Starting Cloudinary upload...');
+            setUploading(true);
+            setUploadProgress(0);
 
-            // Upload video to Cloudinary
-            const uploadedUrl = await uploadVideoToCloudinary(selectedVideo.uri);
+            // Simulate progress updates
+            const progressInterval = setInterval(() => {
+                setUploadProgress(prev => {
+                    if (prev >= 90) {
+                        clearInterval(progressInterval);
+                        return prev;
+                    }
+                    return prev + 10;
+                });
+            }, 500);
 
-            console.log('Uploaded URL:', uploadedUrl);
+            console.log('📤 Starting R2 upload via backend...');
 
-            if (!uploadedUrl) {
+            // Upload video through backend API to R2
+            const result = await uploadVideoToAPI(selectedVideo.uri, 'reels');
+
+            clearInterval(progressInterval);
+            setUploadProgress(100);
+
+            console.log('Uploaded URL:', result.url);
+
+            if (!result.url) {
                 console.log('❌ Upload failed');
                 Alert.alert('Error', 'Failed to upload video. Please try again.');
                 setSubmitting(false);
@@ -218,8 +161,8 @@ export default function ReelsManager() {
                 },
                 body: JSON.stringify({
                     title: newReel.title,
-                    videoUrl: uploadedUrl,
-                    platform: 'cloudinary'
+                    videoUrl: result.url,
+                    platform: 'r2'
                 })
             });
 
@@ -239,6 +182,8 @@ export default function ReelsManager() {
             Alert.alert('Error', `Failed to add reel: ${error?.message || error}`);
         } finally {
             setSubmitting(false);
+            setUploading(false);
+            setUploadProgress(0);
         }
     };
 
