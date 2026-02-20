@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /**
  * Get the correct API URL based on the platform
@@ -54,6 +55,7 @@ export const getSocketUrl = (): string => {
 export const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
     const apiUrl = getApiUrl();
     const url = `${apiUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+    const token = await AsyncStorage.getItem('adminToken');
 
     try {
         console.log(`[API Request] ${options.method || 'GET'} ${url}`);
@@ -62,6 +64,7 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
             headers: {
                 'Content-Type': 'application/json',
                 ...options.headers,
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
             },
         });
 

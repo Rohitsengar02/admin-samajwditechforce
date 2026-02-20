@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getApiUrl } from './api';
 
 /**
@@ -19,6 +20,7 @@ export const uploadImageToAPI = async (
     folder: string = 'uploads'
 ): Promise<string> => {
     const API_URL = getApiUrl();
+    const token = await AsyncStorage.getItem('adminToken');
 
     try {
         // Check if it's a base64 string
@@ -26,7 +28,10 @@ export const uploadImageToAPI = async (
             // Send base64 directly to backend
             const response = await fetch(`${API_URL}/upload/image`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
                 body: JSON.stringify({
                     image: imageSource,
                     folder,
@@ -53,7 +58,10 @@ export const uploadImageToAPI = async (
                         const base64 = reader.result as string;
                         const response = await fetch(`${API_URL}/upload/image`, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: {
+                                'Content-Type': 'application/json',
+                                ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                            },
                             body: JSON.stringify({
                                 image: base64,
                                 folder,
@@ -90,7 +98,10 @@ export const uploadImageToAPI = async (
                                 const base64 = reader.result as string;
                                 const response = await fetch(`${API_URL}/upload/image`, {
                                     method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                                    },
                                     body: JSON.stringify({
                                         image: base64,
                                         folder,
@@ -136,6 +147,7 @@ export const uploadVideoToAPI = async (
     folder: string = 'reels'
 ): Promise<{ url: string; optimizedUrl: string }> => {
     const API_URL = getApiUrl();
+    const token = await AsyncStorage.getItem('adminToken');
 
     try {
         if (Platform.OS === 'web') {
@@ -150,7 +162,10 @@ export const uploadVideoToAPI = async (
                         const base64 = reader.result as string;
                         const response = await fetch(`${API_URL}/upload/video`, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: {
+                                'Content-Type': 'application/json',
+                                ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                            },
                             body: JSON.stringify({
                                 video: base64,
                                 folder,
@@ -185,7 +200,10 @@ export const uploadVideoToAPI = async (
                                 const base64 = reader.result as string;
                                 const response = await fetch(`${API_URL}/upload/video`, {
                                     method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                                    },
                                     body: JSON.stringify({
                                         video: base64,
                                         folder,
