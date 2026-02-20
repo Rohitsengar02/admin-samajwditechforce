@@ -17,7 +17,7 @@ export const getApiUrl = (): string => {
 
     // 2. In Production (Builds), default to hosted URL
     if (!__DEV__) {
-        return 'https://api-samajwaditechforce.onrender.com/api';
+        return 'https://api.samajwaditechforce.com/api';
     }
 
     // 3. Development Fallback

@@ -47,39 +47,34 @@ export const uploadImageToAPI = async (
 
         // For file URIs - convert to base64 or use FormData
         if (Platform.OS === 'web') {
-            // Web: fetch the blob and convert to base64
+            // Web: use FormData for better performance & reliability
             const blobResponse = await fetch(imageSource);
             const blob = await blobResponse.blob();
 
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onloadend = async () => {
-                    try {
-                        const base64 = reader.result as string;
-                        const response = await fetch(`${API_URL}/upload/image`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-                            },
-                            body: JSON.stringify({
-                                image: base64,
-                                folder,
-                            }),
-                        });
-                        const data = await response.json();
-                        if (data.success && data.data?.url) {
-                            resolve(data.data.url);
-                        } else {
-                            reject(new Error(data.message || 'Upload failed'));
-                        }
-                    } catch (error) {
-                        reject(error);
-                    }
-                };
-                reader.onerror = () => reject(new Error('Failed to read file'));
-                reader.readAsDataURL(blob);
-            });
+            const formData = new FormData();
+            formData.append('image', blob, `img_${Date.now()}.jpg`);
+            formData.append('folder', folder);
+
+            try {
+                const response = await fetch(`${API_URL}/upload/image`, {
+                    method: 'POST',
+                    headers: {
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                        // Do NOT set Content-Type
+                    },
+                    body: formData,
+                });
+
+                const data = await response.json();
+                if (data.success && data.data?.url) {
+                    return data.data.url;
+                } else {
+                    throw new Error(data.message || 'Upload failed');
+                }
+            } catch (error) {
+                console.error('❌ Fetch error during image upload:', error);
+                throw error;
+            }
         } else {
             // Native: Use FormData with file URI
             const filename = imageSource.split('/').pop() || `upload_${Date.now()}.jpg`;
@@ -151,42 +146,37 @@ export const uploadVideoToAPI = async (
 
     try {
         if (Platform.OS === 'web') {
-            // Web: fetch blob and convert to base64
+            // Web: use FormData with Blob for better performance & reliability
             const blobResponse = await fetch(videoUri);
             const blob = await blobResponse.blob();
 
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onloadend = async () => {
-                    try {
-                        const base64 = reader.result as string;
-                        const response = await fetch(`${API_URL}/upload/video`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-                            },
-                            body: JSON.stringify({
-                                video: base64,
-                                folder,
-                            }),
-                        });
-                        const data = await response.json();
-                        if (data.success && data.data?.url) {
-                            resolve({
-                                url: data.data.url,
-                                optimizedUrl: data.data.optimizedUrl || data.data.url,
-                            });
-                        } else {
-                            reject(new Error(data.message || 'Video upload failed'));
-                        }
-                    } catch (error) {
-                        reject(error);
-                    }
-                };
-                reader.onerror = () => reject(new Error('Failed to read video'));
-                reader.readAsDataURL(blob);
-            });
+            const formData = new FormData();
+            formData.append('video', blob, `video_${Date.now()}.mp4`);
+            formData.append('folder', folder);
+
+            try {
+                const response = await fetch(`${API_URL}/upload/video`, {
+                    method: 'POST',
+                    headers: {
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                        // Do NOT set Content-Type, browser will set it for FormData
+                    },
+                    body: formData,
+                });
+
+                const data = await response.json();
+                if (data.success && data.data?.url) {
+                    return {
+                        url: data.data.url,
+                        optimizedUrl: data.data.optimizedUrl || data.data.url,
+                    };
+                } else {
+                    throw new Error(data.message || 'Video upload failed');
+                }
+            } catch (error) {
+                console.error('❌ Fetch error during video upload:', error);
+                throw error;
+            }
         } else {
             // Native: Use XMLHttpRequest
             return new Promise((resolve, reject) => {
